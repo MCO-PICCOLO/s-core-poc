@@ -89,5 +89,14 @@ Run the workflow in this order:
 
    ### replace ip of curlcommand with Node1 IP
    bash timpani.sh
+### once OK comes check the current CPU affinity
+   taskset -c -p $(pgrep -x sea_app)
+
+5. run the stress app from the s-core-poc/Node2/TIMPANI/timpani-n/tool
+sudo chrt -f 51 ./stress_app_cpus.sh sea_app 60 99 [60 is timer secs, 99 is percentage of cpu load]
+
+6.once gain check cpu rescheduling
+taskset -c -p $(pgrep -x sea_app) check cpu affinity is changed
+
 ---
 **Note:** The script will stop and report errors if any step fails (due to `set -e`).
