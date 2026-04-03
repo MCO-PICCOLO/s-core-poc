@@ -56,3 +56,7 @@ __pycache__/
 /.coverage
 
 target
+
+# Allow pre-built C++ shared libraries for adas_primary (lifecycle feature)
+!examples/rust/mini-adas/lib/*.so
+!examples/rust/mini-adas/lib/*.a

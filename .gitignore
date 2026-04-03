@@ -78,4 +78,8 @@ compile_commands.json
 .clangd
 .cache
 rust-project.json
+
+# Allow pre-built C++ shared libraries for adas_primary (lifecycle feature)
+!Node1/feo/examples/rust/mini-adas/lib/*.so
+!Node1/feo/examples/rust/mini-adas/lib/*.a
 **/tmp
