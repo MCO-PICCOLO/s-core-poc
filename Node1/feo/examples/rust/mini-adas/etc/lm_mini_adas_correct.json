@@ -1,0 +1,75 @@
+{
+    "versionMajor": 7,
+    "versionMinor": 0,
+    "ModeGroup": [
+        {
+            "identifier": "mini_adas_group",
+            "initialMode_name": "Startup",
+            "initialMode_value": "0",
+            "recoveryMode_name": "Running",
+            "modeDeclaration": [
+                {
+                    "identifier": "Startup"
+                },
+                {
+                    "identifier": "Running"
+                }
+            ]
+        }
+    ],
+    "Process": [
+        {
+            "identifier": "mini_adas_primary",
+            "path": "/tmp/mini_adas_lm/mini_adas/adas_primary",
+            "uid": 1000,
+            "gid": 1000,
+            "numberOfRestartAttempts": 3,
+            "executable_reportingBehavior": "ReportsExecutionState",
+            "startupConfig": [
+                {
+                    "identifier": "mini_adas_primary_startup",
+                    "enterTimeoutValue": 5000,
+                    "exitTimeoutValue": 5000,
+                    "schedulingPolicy": "SCHED_OTHER",
+                    "schedulingPriority": "0",
+                    "terminationBehavior": "ProcessIsNotSelfTerminating",
+                    "executionError": "1",
+                    "processGroupStateDependency": [
+                        {
+                            "stateMachine_name": "mini_adas_group",
+                            "stateName": "mini_adas_group/Running"
+                        }
+                    ],
+                    "environmentVariable": [
+                        {
+                            "key": "LD_LIBRARY_PATH",
+                            "value": "/tmp/mini_adas_lm/lib"
+                        },
+                        {
+                            "key": "IDENTIFIER",
+                            "value": "mini_adas_primary"
+                        },
+                        {
+                            "key": "PROCESSIDENTIFIER",
+                            "value": "mini_adas_primary"
+                        },
+                        {
+                            "key": "CONFIG_PATH",
+                            "value": "/tmp/mini_adas_lm/etc/hmproc_adas_primary.bin"
+                        },
+                        {
+                            "key": "RUST_LOG",
+                            "value": "info"
+                        }
+                    ],
+                    "processArgument": [
+                        {
+                            "argument": "40"
+                        }
+                    ],
+                    "executionDependency": []
+                }
+            ]
+        }
+    ]
+}

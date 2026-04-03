@@ -1,0 +1,323 @@
+{
+    "schema_version": 1,
+    "defaults": {
+        "deployment_config": {
+            "bin_dir": "/opt/pullpiri/bin",
+            "ready_timeout": 5.0,
+            "shutdown_timeout": 2.0,
+            "ready_recovery_action": {
+                "restart": {
+                    "number_of_attempts": 3,
+                    "delay_before_restart": 0.5
+                }
+            },
+            "recovery_action": {
+                "switch_run_target": {
+                    "run_target": "Recovery"
+                }
+            }
+        },
+        "component_properties": {
+            "application_profile": {
+                "application_type": "Native",
+                "is_self_terminating": false
+            },
+            "ready_condition": {
+                "process_state": "Running"
+            }
+        }
+    },
+    "components": {
+        "persistency-service": {
+            "component_properties": {
+                "binary_name": "persistency-service"
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "persistency_service"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "apiserver": {
+            "component_properties": {
+                "binary_name": "apiserver",
+                "depends_on": [
+                    "persistency-service"
+                ]
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "apiserver"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "monitoringserver": {
+            "component_properties": {
+                "binary_name": "monitoringserver",
+                "depends_on": [
+                    "persistency-service"
+                ]
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "monitoringserver"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "statemanager": {
+            "component_properties": {
+                "binary_name": "statemanager",
+                "depends_on": [
+                    "monitoringserver"
+                ]
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "statemanager"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "filtergateway": {
+            "component_properties": {
+                "binary_name": "filtergateway",
+                "depends_on": [
+                    "apiserver"
+                ]
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "filtergateway"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "actioncontroller": {
+            "component_properties": {
+                "binary_name": "actioncontroller",
+                "depends_on": [
+                    "filtergateway",
+                    "statemanager"
+                ]
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "actioncontroller"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "policymanager": {
+            "component_properties": {
+                "binary_name": "policymanager",
+                "depends_on": []
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "policymanager"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "timpani-o": {
+            "component_properties": {
+                "binary_name": "timpani-o",
+                "process_arguments": [
+                    "-s",
+                    "50052",
+                    "localhost",
+                    "-p",
+                    "50053",
+                    "-d",
+                    "7777",
+                    "--node-config",
+                    "/home/acrn/new_ak/vso_score/pullpiri/examples/resources/timpani/node_configurations.yaml"
+                ],
+                "depends_on": []
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "timpani-o"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "nodeagent": {
+            "component_properties": {
+                "binary_name": "nodeagent",
+                "depends_on": [
+                    "apiserver",
+                    "persistency-service"
+                ]
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "nodeagent"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "timpani-n": {
+            "component_properties": {
+                "binary_name": "timpani-n",
+                "process_arguments": [
+                    "-n",
+                    "perf_node",
+                    "-c",
+                    "1",
+                    "-P",
+                    "85",
+                    "-p",
+                    "7777",
+                    "-l",
+                    "4",
+                    "localhost"
+                ],
+                "depends_on": [
+                    "timpani-o"
+                ]
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "timpani-n"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "adas_primary": {
+            "component_properties": {
+                "binary_name": "adas_primary",
+                "application_profile": {
+                    "application_type": "Reporting_And_Supervised",
+                    "alive_supervision": {
+                        "reporting_cycle": 0.2,
+                        "min_indications": 1,
+                        "max_indications": 5,
+                        "failed_cycles_tolerance": 3
+                    }
+                },
+                "process_arguments": ["400"],
+                "depends_on": []
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "adas_primary",
+                    "IDENTIFIER": "adas_primary",
+                    "LD_LIBRARY_PATH": "/opt/pullpiri/lib",
+                    "CONFIG_PATH": "/opt/pullpiri/etc/hmproc_adas_primary.bin",
+                    "RUST_LOG": "info"
+                },
+                "sandbox": {
+                    "uid": 1000,
+                    "gid": 1000
+                }
+            }
+        },
+        "adas_secondary_1": {
+            "component_properties": {
+                "binary_name": "adas_secondary",
+                "application_profile": {
+                    "application_type": "Native"
+                },
+                "process_arguments": ["1"],
+                "depends_on": ["adas_primary"]
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "adas_secondary_1",
+                    "IDENTIFIER": "adas_secondary_1",
+                    "LD_LIBRARY_PATH": "/opt/pullpiri/lib"
+                },
+                "sandbox": {
+                    "uid": 1000,
+                    "gid": 1000
+                }
+            }
+        },
+        "adas_secondary_2": {
+            "component_properties": {
+                "binary_name": "adas_secondary",
+                "application_profile": {
+                    "application_type": "Native"
+                },
+                "process_arguments": ["2"],
+                "depends_on": ["adas_primary"]
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "adas_secondary_2",
+                    "IDENTIFIER": "adas_secondary_2",
+                    "LD_LIBRARY_PATH": "/opt/pullpiri/lib"
+                },
+                "sandbox": {
+                    "uid": 1000,
+                    "gid": 1000
+                }
+            }
+        }
+    },
+    "run_targets": {
+        "Startup": {
+            "depends_on": [
+                "persistency-service",
+                "policymanager",
+                "apiserver",
+                "monitoringserver",
+                "statemanager",
+                "filtergateway",
+                "actioncontroller",
+                "timpani-o",
+                "adas_primary",
+                "adas_secondary_1",
+                "adas_secondary_2"
+            ]
+        },
+        "Recovery": {
+            "depends_on": []
+        }
+    },
+    "initial_run_target": "Startup",
+    "fallback_run_target": {
+        "depends_on": [
+            "adas_primary",
+            "adas_secondary_1",
+            "adas_secondary_2"
+        ]
+    },
+    "alive_supervision": {
+        "evaluation_cycle": 0.05
+    }
+}

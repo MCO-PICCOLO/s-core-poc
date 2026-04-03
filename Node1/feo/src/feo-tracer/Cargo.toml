@@ -1,0 +1,17 @@
+[package]
+name = "feo-tracer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = { workspace = true }
+argh = { workspace = true }
+feo-tracing = { workspace = true }
+futures = { workspace = true }
+human_bytes = { workspace = true }
+indicatif = { workspace = true }
+perfetto-model = { workspace = true }
+postcard = { workspace = true }
+prost = { workspace = true }
+rand = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }

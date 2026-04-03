@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: Copyright 2026 LG Electronics Inc.
+# SPDX-License-Identifier: MIT
+
+version: '3.8'
+
+services:
+  timpani-o:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sdv.lge.com/timpani/timpani-o:latest
+    container_name: timpani-o
+    ports:
+      - "50052:50052"  # gRPC SchedInfoServer
+      - "7777:7777"    # D-Bus Server (libtrpc)
+    environment:
+      - SINFO_PORT=50052
+      - DBUS_PORT=7777
+      - FAULT_HOST=${FAULT_HOST:-localhost}
+      - FAULT_PORT=${FAULT_PORT:-50053}
+    volumes:
+      # Mount custom node configuration (optional)
+      - ./examples/node_configurations.yaml:/timpani-o/config/node_configurations.yaml:ro
+    command: ["-s", "50052", "-d", "7777", "-c", "/timpani-o/config/node_configurations.yaml"]
+    restart: unless-stopped
+    # For connecting to Piccolo FaultService on host
+    # extra_hosts:
+    #   - "piccolo-server:host-gateway"

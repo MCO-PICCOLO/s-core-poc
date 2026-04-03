@@ -1,0 +1,167 @@
+// *******************************************************************************
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache License Version 2.0 which is available at
+// <https://www.apache.org/licenses/LICENSE-2.0>
+//
+// SPDX-License-Identifier: Apache-2.0
+// *******************************************************************************
+
+//! Collect trace data - placeholder
+
+use anyhow::{bail, Context, Error};
+use argh::FromArgs;
+use core::future::pending;
+use feo_tracer::io::listen;
+use feo_tracer::perfetto;
+use futures::FutureExt;
+use score_log::{debug, info, LevelFilter};
+use std::path::{Path, PathBuf};
+use std::{fs, io};
+use stdout_logger::StdoutLoggerBuilder;
+use tokio::sync::mpsc;
+use tokio::{runtime, select, signal, task, time};
+
+/// Progress bar wrapper
+mod progress;
+
+/// Path to the Unix socket
+const UNIX_PACKET_PATH: &str = "/tmp/feo-tracer.sock";
+
+/// Size of the message channel (number of messages) for transmitting decoded trace
+/// packets to the file writer
+const MESSAGE_CHANNEL_SIZE: usize = 256;
+
+/// Size of the file writing buffer (bytes)
+const FILE_BUFFER_SIZE: usize = 1024 * 1024;
+
+/// The number of Tokio worker threads to spawn
+const NUM_THREADS: usize = 4;
+
+#[derive(FromArgs)]
+#[argh(help_triggers("-h", "--help", "help"))]
+/// Tracer arguments
+struct Args {
+    #[argh(description = "trace duration in seconds")]
+    #[argh(option, short = 'd')]
+    duration: Option<u64>,
+
+    #[argh(description = "output path")]
+    #[argh(option, short = 'o')]
+    out: PathBuf,
+
+    #[argh(description = "log level")]
+    #[argh(option, short = 'l')]
+    log_level: Option<LevelFilter>,
+}
+
+/// Tracer main entry point
+fn main() -> Result<(), Error> {
+    let Args {
+        duration,
+        out,
+        log_level,
+    } = argh::from_env();
+
+    // Initialize logging
+    StdoutLoggerBuilder::new()
+        .context("feo-tracer")
+        .show_module(true)
+        .show_file(true)
+        .show_line(true)
+        .log_level(LevelFilter::Warn)
+        .set_as_default_logger();
+
+    // Initialize progress bar
+    let mut progress = progress::Progress::new()?;
+
+    score_log::set_max_level(log_level.unwrap_or(LevelFilter::Warn));
+
+    info!("Starting feo-tracer");
+
+    let mut tasks = task::JoinSet::new();
+
+    let (message_sender, mut message_receiver) = mpsc::channel(MESSAGE_CHANNEL_SIZE);
+
+    // Listen for incoming connections on a socket
+    // Forward the messages to the message channel.
+    let fan_in_socket = {
+        let message_sender = message_sender.clone();
+        async move {
+            let path = Path::new(UNIX_PACKET_PATH);
+            // Check if socket is present and remove if necessary
+            if path.exists() {
+                debug!("Removing stale socket at {}", format!("{path:?}"));
+                fs::remove_file(path).with_context(|| format!("failed to remove {path:?}"))?;
+            }
+            listen(path, message_sender).await
+        }
+    };
+
+    // Handle incoming messages on the message channel. The channel yields
+    // messages from all connected processes.
+    let process_messages = {
+        // Open the output file and create a progress bar for the writes
+        let writer = io::BufWriter::with_capacity(
+            FILE_BUFFER_SIZE,
+            fs::File::create(&out).with_context(|| format!("failed to create {}", out.display()))?,
+        );
+
+        // Wrap writer in a progress bar
+        let writer = progress.add_writer(&format!("perfetto output ({})", out.display()), writer);
+
+        // Create a perfetto writer
+        let mut perfetto = perfetto::Perfetto::new(writer);
+
+        // Process messages as they arrive
+        let process_packets = async move {
+            while let Some(message) = message_receiver.recv().await {
+                progress.on_packet(&message);
+                perfetto.on_packet(message)?;
+            }
+            Ok(())
+        };
+
+        // Timeout if configured or wait indefinitely
+        let timeout = async move {
+            if let Some(duration) = duration.map(time::Duration::from_secs) {
+                info!("Tracing for {}", format!("{duration:?}"));
+                time::sleep(duration).await;
+                info!("Traced for {}. Shutting down...", format!("{duration:?}"));
+            } else {
+                pending::<()>().await;
+            }
+        };
+        let run = async move {
+            select! {
+                r = process_packets => r,
+                _ = timeout => Ok(()),
+                _ =  signal::ctrl_c() => Ok(()),
+            }
+        };
+        run.inspect(|_| info!("Tracing complete"))
+    };
+
+    // Wait for all tasks to finish or error
+    let run = async {
+        tasks.spawn(fan_in_socket);
+        tasks.spawn(process_messages);
+
+        match tasks.join_next().await.expect("no tasks to join") {
+            Ok(_) => Ok(()),
+            Err(e) => bail!(e),
+        }
+    };
+
+    // Fire up runtime and wait
+    runtime::Builder::new_multi_thread()
+        .worker_threads(NUM_THREADS)
+        .enable_io()
+        .enable_time()
+        .build()?
+        .block_on(run)
+}

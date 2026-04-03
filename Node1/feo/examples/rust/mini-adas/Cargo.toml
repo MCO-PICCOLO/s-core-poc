@@ -1,0 +1,49 @@
+[package]
+name = "mini-adas"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+path = "src/bin/adas_deserializer.rs"
+name = "adas_deserializer"
+required-features = ["recording"]
+
+[[bin]]
+path = "src/bin/adas_recorder.rs"
+name = "adas_recorder"
+required-features = ["recording"]
+
+[dependencies]
+dust_dds = { workspace = true }
+dust_dds_derive = { workspace = true }
+feo = { workspace = true }
+feo-com = { workspace = true }
+feo-cpp-macros = { workspace = true }
+feo-time = { workspace = true }
+feo-tracing = { workspace = true }
+mini_adas_gen = { workspace = true }
+postcard = { workspace = true, features = ["experimental-derive"] }
+score_log = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+stdout_logger = { workspace = true }
+tracing = { workspace = true }
+health_monitoring_lib = { path = "../../../../lifecycle/lifecycle/src/health_monitoring_lib", optional = true }
+lifecycle_client_rs = { path = "../../../../lifecycle/lifecycle/src/launch_manager_daemon/lifecycle_client_lib/rust_bindings", optional = true }
+signal-hook = { version = "0.3", optional = true }
+libc = { workspace = true }
+
+[build-dependencies]
+feo-cpp-build = { workspace = true }
+
+[features]
+com_iox2 = ["feo-com/ipc_iceoryx2"]
+com_linux_shm = ["feo-com/ipc_linux_shm"]
+default = ["com_iox2", "signalling_relayed_tcp"]
+signalling_direct_mpsc = []
+signalling_direct_tcp = []
+signalling_direct_unix = []
+signalling_relayed_tcp = []
+signalling_relayed_unix = []
+recording = ["feo/recording"]
+lifecycle = ["health_monitoring_lib", "lifecycle_client_rs", "signal-hook"]

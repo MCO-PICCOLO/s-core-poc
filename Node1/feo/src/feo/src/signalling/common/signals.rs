@@ -1,0 +1,80 @@
+// *******************************************************************************
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache License Version 2.0 which is available at
+// <https://www.apache.org/licenses/LICENSE-2.0>
+//
+// SPDX-License-Identifier: Apache-2.0
+// *******************************************************************************
+
+//! Signals
+
+use crate::error::ActivityError;
+use crate::ids::{ActivityId, AgentId};
+use crate::timestamp::{SyncInfo, Timestamp};
+use core::fmt::Display;
+#[cfg(feature = "recording")]
+use postcard::experimental::max_size::MaxSize;
+use score_log::ScoreDebug;
+#[cfg(feature = "recording")]
+use serde::{Deserialize, Serialize};
+
+/// Signal types sent between threads or processes
+#[cfg_attr(feature = "recording", derive(Serialize, Deserialize, MaxSize))]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, ScoreDebug)]
+pub enum Signal {
+    // Signal sent from the primary agent to each secondary agent containing synchronization info
+    StartupSync(SyncInfo),
+
+    // Signal sent by the scheduler on the primary agent to trigger an activity's startup method
+    Startup((ActivityId, Timestamp)),
+
+    // Signal sent by the scheduler on the primary agent to trigger an activity's shutdown method
+    Shutdown((ActivityId, Timestamp)),
+
+    // Signal sent by the scheduler on the primary agent to trigger an activity's step method
+    Step((ActivityId, Timestamp)),
+
+    // Signal sent to indicate that a previously triggered activity method has finished
+    Ready((ActivityId, Timestamp)),
+
+    // Signal sent from a worker when an activity's step or shutdown method fails.
+    ActivityFailed((ActivityId, ActivityError)),
+
+    // Signal sent by the scheduler to the recorders whenever the taskchain starts
+    TaskChainStart(Timestamp),
+
+    // Signal sent by the scheduler to the recorders whenever the taskchain ends
+    TaskChainEnd(Timestamp),
+
+    // Signal sent to indicate that a recorder operation has finished
+    RecorderReady((AgentId, Timestamp)),
+
+    // Signal sent by the scheduler to all workers to terminate the agent process
+    Terminate(Timestamp),
+
+    // Signal sent by a worker to acknowledge termination
+    TerminateAck(AgentId),
+}
+
+impl Display for Signal {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Signal::StartupSync(t) => write!(f, "StartupSync({t:?})"),
+            Signal::Startup((id, t)) => write!(f, "Startup({id}, {t:?})"),
+            Signal::Shutdown((id, t)) => write!(f, "Shutdown({id}, {t:?})"),
+            Signal::Step((id, t)) => write!(f, "Step({id}, {t:?})"),
+            Signal::Ready((id, t)) => write!(f, "Ready({id}, {t:?})"),
+            Signal::ActivityFailed((id, err)) => write!(f, "ActivityFailed({id}, {err:?})"),
+            Signal::TaskChainStart(t) => write!(f, "TaskChainStart({t:?})"),
+            Signal::TaskChainEnd(t) => write!(f, "TaskChainEnd({t:?})"),
+            Signal::RecorderReady((id, t)) => write!(f, "RecorderReady({id}, {t:?})"),
+            Signal::Terminate(t) => write!(f, "Terminate({t:?})"),
+            Signal::TerminateAck(id) => write!(f, "TerminateAck({id})"),
+        }
+    }
+}

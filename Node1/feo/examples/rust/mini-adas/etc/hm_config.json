@@ -1,0 +1,14 @@
+{
+  "description": "Health Monitor configuration for mini-adas primary agent",
+  "monitor_tag": "adas_primary_monitor",
+  "deadline_tag": "feo_cycle_deadline",
+  "deadline_window": {
+    "min_ms": 0,
+    "max_ms": 600,
+    "comment": "For 400ms cycle: min=50%, max=150% (allows timeout + grace)"
+  },
+  "health_monitor": {
+    "internal_processing_cycle_ms": 50,
+    "supervisor_api_cycle_ms": 200
+  }
+}

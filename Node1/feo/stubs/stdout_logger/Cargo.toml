@@ -1,0 +1,8 @@
+[package]
+name = "stdout_logger"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+log = { version = "0.4" }
+env_logger = { version = "0.11" }

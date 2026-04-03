@@ -1,0 +1,6 @@
+{
+    "ecuId": "PULLPIRI",
+    "logMode": "kConsole|kFile",
+    "logLevelThresholdConsole": "kDebug",
+    "logFilePath": "/var/lib/pullpiri/logs"
+}

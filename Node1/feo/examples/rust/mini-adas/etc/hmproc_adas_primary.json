@@ -1,0 +1,42 @@
+{
+    "versionMajor": 8,
+    "versionMinor": 0,
+    "process": [
+        {
+            "shortName": "mini_adas_primary",
+            "identifier": "mini_adas_primary",
+            "index": 1,
+            "processType": 0
+        }
+    ],
+    "hmMonitorInterface": [
+        {
+            "instanceSpecifier": "mini_adas_primary",
+            "processShortName": "mini_adas_primary",
+            "portPrototype": "DefaultPort",
+            "interfacePath": "lifecycle_health_mini_adas_primary",
+            "refProcessIndex": 1,
+            "permittedUid": 1000
+        }
+    ],
+    "hmSupervisionCheckpoint": [
+        {
+            "shortName": "mini_adas_primary_cycle",
+            "checkpointId": 1,
+            "refInterfaceIndex": 0
+        }
+    ],
+    "hmAliveSupervision": [
+        {
+            "ruleContextKey": "mini_adas_primary_deadline",
+            "refCheckPointIndex": 0,
+            "aliveReferenceCycle": 0.4,
+            "minAliveIndications": 1,
+            "maxAliveIndications": 1,
+            "isMinCheckDisabled": false,
+            "isMaxCheckDisabled": false,
+            "failedSupervisionCyclesTolerance": 2,
+            "refProcessIndex": 1
+        }
+    ]
+}

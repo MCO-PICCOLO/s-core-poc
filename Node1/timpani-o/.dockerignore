@@ -1,0 +1,29 @@
+# Build artifacts
+build/
+*.o
+*.a
+
+# Git
+.git/
+.gitignore
+.gitmodules
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation (not needed in image)
+*.md
+!README.md
+
+# Tests
+tests/
+
+# CI/CD
+.github/
+
+# Editor config
+.editorconfig
+.clang-format

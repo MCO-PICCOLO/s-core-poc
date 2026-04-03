@@ -1,0 +1,45 @@
+# *******************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# SPDX-License-Identifier: Apache-2.0
+# *******************************************************************************
+
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["*"]
+  workflow_dispatch:
+
+jobs:
+  bazel-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazelbuild/setup-bazelisk@v3
+
+      - uses: actions/cache@v4
+        with:
+          path: "~/.cache/bazel"
+          key: bazel
+
+      - name: Bazel mod tidy
+        run: bazel mod tidy
+
+      - name: Build all workspace targets
+        run: bazel build --config=x86_64-linux //...
+
+      - name: Run all workspace tests
+        run: bazel test --config=x86_64-linux //...
+
+      - name: Lint rust code (with clippy)
+        run: bazel build --config=lint-rust //...

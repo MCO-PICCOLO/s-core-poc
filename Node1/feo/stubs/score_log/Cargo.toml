@@ -1,0 +1,8 @@
+[package]
+name = "score_log"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+log = { version = "0.4" }
+score_log_derive = { path = "../score_log_derive" }

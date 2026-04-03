@@ -1,0 +1,1 @@
+# Removed global rustflags - now handled in build.rs for lifecycle feature only

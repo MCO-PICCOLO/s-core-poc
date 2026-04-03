@@ -1,0 +1,24 @@
+[package]
+name = "feo"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+feo-com = { workspace = true }
+feo-time = { workspace = true }
+feo-tracing = { workspace = true }
+libc = { workspace = true }
+mio = { workspace = true }
+score_log = { workspace = true }
+postcard = { workspace = true, features = [
+    "experimental-derive",
+], optional = true }
+serde = { workspace = true, optional = true }
+ctrlc = { workspace = true, features = ["termination"] }
+
+[features]
+default = []
+loop_duration_meter = []
+# Note: Once we have a better abstraction in `feo-com`,
+# we will not need to activate a feature by default for `recording`.
+recording = ["dep:serde", "dep:postcard"]

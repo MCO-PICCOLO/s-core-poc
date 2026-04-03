@@ -1,0 +1,11 @@
+[package]
+name = "mini_adas_gen"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+libc = { workspace = true }
+score_log = { workspace = true }

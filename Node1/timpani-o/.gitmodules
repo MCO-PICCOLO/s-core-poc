@@ -1,0 +1,3 @@
+[submodule "external/libtrpc"]
+	path = external/libtrpc
+	url = http://mod.lge.com/hub/timpani/libtrpc

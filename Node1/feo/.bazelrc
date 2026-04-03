@@ -1,0 +1,47 @@
+# *******************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# SPDX-License-Identifier: Apache-2.0
+# *******************************************************************************
+
+build --java_language_version=17
+build --tool_java_language_version=17
+build --java_runtime_version=remotejdk_17
+build --tool_java_runtime_version=remotejdk_17
+
+test --test_output=errors
+
+common --registry=https://raw.githubusercontent.com/eclipse-score/bazel_registry/main/
+common --registry=https://bcr.bazel.build
+
+common --extra_toolchains=@score_gcc_x86_64_toolchain//:x86_64-linux-gcc_12.2.0-posix
+common --extra_toolchains=@score_toolchains_rust//toolchains/ferrocene:ferrocene_x86_64_unknown_linux_gnu
+
+# -------------------------------------------------------------------------------
+# Config dedicated to host platform CPU:x86_64 and OS:Linux
+# -------------------------------------------------------------------------------
+build:x86_64-linux --platforms=@score_bazel_platforms//:x86_64-linux-gcc_12.2.0-posix
+build:x86_64-linux --extra_toolchains=@score_gcc_x86_64_toolchain//:x86_64-linux-gcc_12.2.0-posix
+build:x86_64-linux --extra_toolchains=@score_toolchains_rust//toolchains/ferrocene:ferrocene_x86_64_unknown_linux_gnu
+
+# Clippy linting (enabled by default)
+build --aspects=@score_rust_policies//clippy:linters.bzl%clippy_strict
+build --output_groups=+rules_lint_human
+build:lint --@aspect_rules_lint//lint:fail_on_violation=true
+
+build:lint-rust --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect
+build:lint-rust --output_groups=+clippy_checks
+build:lint-rust --@rules_rust//:clippy.toml=//:clippy.toml
+
+# Communication integration
+common --@score_logging//score/mw/log/flags:KRemote_Logging=False
+common --@score_baselibs//score/json:base_library=nlohmann
+common --@score_baselibs//score/memory/shared/flags:use_typedshmd=False
+common --@score_communication//score/mw/com/flags:tracing_library=@score_baselibs//score/analysis/tracing/generic_trace_library/stub_implementation
