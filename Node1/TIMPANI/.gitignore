@@ -26,6 +26,8 @@ CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 Makefile
+!libbpf/src/Makefile
+!libbpf/docs/sphinx/Makefile
 install_manifest.txt
 CTestTestfile.cmake
 Testing/
