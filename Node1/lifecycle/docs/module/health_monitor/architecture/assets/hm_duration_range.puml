@@ -1,9 +1,0 @@
-@startuml
-
-+struct TimeRange
-{
-    min: Duration
-    max: Duration
-}
-
-@enduml
