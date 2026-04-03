@@ -83,3 +83,4 @@ rust-project.json
 !Node1/feo/examples/rust/mini-adas/lib/*.so
 !Node1/feo/examples/rust/mini-adas/lib/*.a
 **/tmp
+*.bin

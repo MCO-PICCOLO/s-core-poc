@@ -37,8 +37,6 @@
                     "PROCESSIDENTIFIER": "persistency_service"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
                 }
             }
         },
@@ -54,8 +52,7 @@
                     "PROCESSIDENTIFIER": "apiserver"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
+                
                 }
             }
         },
@@ -71,8 +68,7 @@
                     "PROCESSIDENTIFIER": "monitoringserver"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
+                
                 }
             }
         },
@@ -88,9 +84,7 @@
                     "PROCESSIDENTIFIER": "statemanager"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
-                }
+                    }
             }
         },
         "filtergateway": {
@@ -105,8 +99,7 @@
                     "PROCESSIDENTIFIER": "filtergateway"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
+                    
                 }
             }
         },
@@ -122,8 +115,7 @@
                     "PROCESSIDENTIFIER": "actioncontroller"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
+                    
                 }
             }
         },
@@ -137,8 +129,7 @@
                     "PROCESSIDENTIFIER": "policymanager"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
+                    
                 }
             }
         },
@@ -163,8 +154,7 @@
                     "PROCESSIDENTIFIER": "timpani-o"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
+                    
                 }
             }
         },
@@ -181,8 +171,7 @@
                     "PROCESSIDENTIFIER": "nodeagent"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
+                    
                 }
             }
         },
@@ -211,8 +200,7 @@
                     "PROCESSIDENTIFIER": "timpani-n"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
+                    
                 }
             }
         },

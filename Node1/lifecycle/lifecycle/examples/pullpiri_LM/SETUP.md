@@ -34,7 +34,9 @@ If your checkout differs, export `MINI_ADAS_DIR` before running the script.
 >   https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64
 > sudo chmod +x /usr/local/bin/bazel
 > ```
-
+## Timpani Dependencies
+sudo apt install -y libgrpc++-dev libprotobuf-dev protobuf-compiler-grpc
+sudo apt install -y libsystemd-dev
 ---
 
 ## 2. One-Time Directory Setup
@@ -57,7 +59,26 @@ Build them from the **Pullpiri** repo and copy them:
 
 ```bash
 # Inside the pullpiri repo
+cd s-core-poc/Node1/pullpiri
+in each of below components run 
+
+cd src/server/persistency-service/
 cargo build --release
+cd ../apiserver/
+cargo build --release
+cd ../monitoringserver/
+cargo build --release
+cd ../policymanager/
+cargo build --release
+cd ../../player/actioncontroller/
+cargo build --release
+cd ../filtergateway
+cargo build --release
+cd ../statemanager
+cargo build --release
+
+cd ../
+
 sudo cp target/release/persistency-service /opt/pullpiri/bin/
 sudo cp target/release/apiserver            /opt/pullpiri/bin/
 sudo cp target/release/monitoringserver     /opt/pullpiri/bin/
@@ -65,19 +86,25 @@ sudo cp target/release/statemanager         /opt/pullpiri/bin/
 sudo cp target/release/filtergateway        /opt/pullpiri/bin/
 sudo cp target/release/actioncontroller     /opt/pullpiri/bin/
 sudo cp target/release/policymanager        /opt/pullpiri/bin/
-sudo cp target/release/nodeagent            /opt/pullpiri/bin/
+#sudo cp target/release/nodeagent            /opt/pullpiri/bin/
 sudo chmod +x /opt/pullpiri/bin/*
 ```
 
 ### Timpani binaries
 
-`timpani-o` and `timpani-n` must also be present in `/opt/pullpiri/bin/`.  
+`timpani-o`  must also be present in `/opt/pullpiri/bin/`.  
 Build them from the **Timpani** repo:
+cd ../../TIMPANI/timpani-o
+mkdir build
+cd build
+cmake ..
+make
 
 ```bash
-sudo cp <timpani_build_dir>/timpani-o /opt/pullpiri/bin/
-sudo cp <timpani_build_dir>/timpani-n /opt/pullpiri/bin/
-sudo chmod +x /opt/pullpiri/bin/timpani-o /opt/pullpiri/bin/timpani-n
+sudo cp -f timpani-o /opt/pullpiri/bin/
+#sudo cp <timpani_build_dir>/timpani-n /opt/pullpiri/bin/
+sudo chmod +x /opt/pullpiri/bin/timpani-o 
+#sudo chmod +x /opt/pullpiri/bin/timpani-n
 ```
 
 ---
@@ -91,12 +118,15 @@ building `adas_primary`.
 
 > **Quick path:** run the helper script once and skip the manual steps below:
 > ```bash
-> cd /home/acrn/new_ak/vso_score/lifecycle/lifecycle/examples/pullpiri_LM
+> cd ~/s-core-poc/Node1/feo/examples/rust/mini-adas
+> mkdir lib
+> cd ~/s-core-poc/Node1/lifecycle/lifecycle/examples/pullpiri_LM
 > chmod +x build_adas_libs.sh
 > ./build_adas_libs.sh
 > ```
-
-### 4a. Build the `.so` targets
+ 
+ ### or follow below 4a, 4b, 4c steps manually
+### 4a. Build the `.so` targets manually
 
 ```bash
 cd /home/acrn/new_ak/vso_score/lifecycle/lifecycle
@@ -105,6 +135,7 @@ bazel build --config=x86_64-linux \
   //src/launch_manager_daemon/common:all \
   //src/launch_manager_daemon/health_monitor_lib:phm_logging \
   //src/launch_manager_daemon/health_monitor_lib:timers \
+  //src/launch_manager_daemon/health_monitor_lib:hm-lib \ 
   //src/launch_manager_daemon/health_monitor_lib:hm_shared_lib \
   //src/launch_manager_daemon/process_state_client_lib:process_state_client \
   //src/launch_manager_daemon/lifecycle_client_lib:lifecycle_client
@@ -113,8 +144,8 @@ bazel build --config=x86_64-linux \
 ### 4b. Copy `.so` files into mini-adas `lib/`
 
 ```bash
-DEST=/home/acrn/new_ak/vso_score/feo/examples/rust/mini-adas/lib
-BAZEL_BIN=/home/acrn/new_ak/vso_score/lifecycle/lifecycle/bazel-bin
+DEST=~/s-core-poc/Node1/feo/examples/rust/mini-adas/lib
+BAZEL_BIN=~/s-core-poc/Node1/lifecycle/lifecycle/bazel-bin
 
 cp $BAZEL_BIN/src/launch_manager_daemon/common/libcommon.so                                  $DEST/
 cp $BAZEL_BIN/src/launch_manager_daemon/common/libosal.so                                    $DEST/
@@ -123,12 +154,13 @@ cp $BAZEL_BIN/src/launch_manager_daemon/health_monitor_lib/libphm_logging.so    
 cp $BAZEL_BIN/src/launch_manager_daemon/health_monitor_lib/libtimers.so                      $DEST/
 cp $BAZEL_BIN/src/launch_manager_daemon/process_state_client_lib/libprocess_state_client.so  $DEST/
 cp $BAZEL_BIN/src/launch_manager_daemon/lifecycle_client_lib/liblifecycle_client.so          $DEST/
+cp $BAZEL_BIN/src/launch_manager_daemon/health_monitor_lib/libhm-lib.a                       $DEST/
 ```
 
 ### 4c. Verify
 
 ```bash
-ls -lh /home/acrn/new_ak/vso_score/feo/examples/rust/mini-adas/lib/
+ls -lh ~/s-core-poc/Node1/feo/examples/rust/mini-adas/lib/
 ```
 
 | Library | Approx. size |
