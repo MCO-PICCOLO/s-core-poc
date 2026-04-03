@@ -1,0 +1,28 @@
+/*
+ * SPDX-FileCopyrightText: Copyright 2024 LG Electronics Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package nodeagent.fromactioncontroller;
+
+message HandleWorkloadRequest {
+  WorkloadCommand workload_command = 1;
+  string pod = 2;
+}
+
+message HandleWorkloadResponse {
+  bool status = 1;
+  string desc = 2;
+}
+
+enum WorkloadCommand {
+  WORKLOAD_COMMAND_CREATE = 0;
+  WORKLOAD_COMMAND_START = 1;
+  WORKLOAD_COMMAND_PAUSE = 2;
+  WORKLOAD_COMMAND_UNPAUSE = 3;
+  WORKLOAD_COMMAND_STOP = 4;
+  WORKLOAD_COMMAND_RESTART = 5;
+  WORKLOAD_COMMAND_REMOVE = 6;
+}

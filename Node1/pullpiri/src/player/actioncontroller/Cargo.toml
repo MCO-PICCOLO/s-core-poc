@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: Copyright 2024 LG Electronics Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "actioncontroller"
+version = "0.1.0"
+edition = "2021"
+authors = ["LG Electronics"]
+license = "Apache-2.0"
+description = "Action Controller component for Pullpiri"
+
+[dependencies]
+tokio = { version = "1.43.1", features = ["full"] }
+tonic = "0.12.3"
+prost = "0.13.3"
+serde = { version = "1.0.214", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1.0.143"
+common = { workspace = true }
+base64 = "0.22.1"

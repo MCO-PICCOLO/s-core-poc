@@ -1,0 +1,103 @@
+/*
+ * SPDX-FileCopyrightText: Copyright 2024 LG Electronics Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package rocksdbservice;
+
+// RocksDB Service for multi-process access
+service RocksDbService {
+    // Health check
+    rpc Health(HealthRequest) returns (HealthResponse);
+    
+    // Basic operations
+    rpc Put(PutRequest) returns (PutResponse);
+    rpc Get(GetRequest) returns (GetResponse);
+    rpc Delete(DeleteRequest) returns (DeleteResponse);
+    
+    // Batch operations
+    rpc BatchPut(BatchPutRequest) returns (BatchPutResponse);
+    rpc GetByPrefix(GetByPrefixRequest) returns (GetByPrefixResponse);
+    
+    // Advanced operations
+    rpc ListKeys(ListKeysRequest) returns (ListKeysResponse);
+}
+
+// Health check messages
+message HealthRequest {}
+
+message HealthResponse {
+    string status = 1;
+    string version = 2;
+    string database_path = 3;
+}
+
+// Basic operation messages
+message PutRequest {
+    string key = 1;
+    string value = 2;
+}
+
+message PutResponse {
+    bool success = 1;
+    string error = 2;
+}
+
+message GetRequest {
+    string key = 1;
+}
+
+message GetResponse {
+    bool success = 1;
+    string value = 2;
+    string message = 3;
+}
+
+message DeleteRequest {
+    string key = 1;
+}
+
+message DeleteResponse {
+    bool success = 1;
+    string error = 2;
+}
+
+// Batch operation messages
+message KeyValue {
+    string key = 1;
+    string value = 2;
+}
+
+message BatchPutRequest {
+    repeated KeyValue pairs = 1;
+}
+
+message BatchPutResponse {
+    bool success = 1;
+    int32 processed_count = 2;
+    string error = 3;
+}
+
+message GetByPrefixRequest {
+    string prefix = 1;
+    int32 limit = 2; // Optional limit
+}
+
+message GetByPrefixResponse {
+    repeated KeyValue pairs = 1;
+    int32 total_count = 2;
+    string error = 3;
+}
+
+message ListKeysRequest {
+    string prefix = 1; // Optional prefix filter
+    int32 limit = 2;   // Optional limit
+}
+
+message ListKeysResponse {
+    repeated string keys = 1;
+    int32 total_count = 2;
+    string error = 3;
+}

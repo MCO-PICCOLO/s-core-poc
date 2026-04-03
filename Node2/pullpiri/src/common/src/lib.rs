@@ -1,0 +1,249 @@
+/*
+ * SPDX-FileCopyrightText: Copyright 2024 LG Electronics Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+pub use crate::error::Result;
+
+pub mod error;
+pub mod etcd;
+pub mod persistency;
+pub mod persistency_client;
+pub mod setting;
+pub mod spec;
+
+// gRPC protobuf module for RocksDB service
+pub mod rocksdbservice {
+    include!("generated/rocksdbservice.rs");
+}
+
+// gRPC protobuf module for Persistency service
+pub mod persistency_proto {
+    include!("generated/persistency.rs");
+
+    pub fn connect_server() -> String {
+        super::connect_server(47007)
+    }
+
+    pub fn open_server() -> String {
+        super::open_server(47007)
+    }
+}
+
+fn open_server(port: u16) -> String {
+    format!("{}:{}", crate::setting::get_config().host.ip, port)
+}
+
+// // guest 서버 함수 수정: 이제 항상 호스트 서버 주소 반환
+// fn open_guest_server(port: u16) -> String {
+//     // 항상 호스트 서버 주소 반환
+//     open_server(port)
+// }
+
+fn connect_server(port: u16) -> String {
+    format!("http://{}:{}", crate::setting::get_config().host.ip, port)
+}
+
+// guest 서버 연결 함수 수정: 이제 항상 호스트 서버 주소 반환
+//using rust build in _ to below code , as it was never used anywhere to prevent warnings
+fn _connect_guest_server(port: u16) -> String {
+    // 항상 호스트 서버 주소 반환
+    connect_server(port)
+}
+
+pub mod actioncontroller {
+    include!("generated/actioncontroller.rs");
+
+    pub fn open_server() -> String {
+        super::open_server(47001)
+    }
+
+    pub fn connect_server() -> String {
+        super::connect_server(47001)
+    }
+}
+
+pub mod apiserver {
+    include!("generated/apiserver.rs");
+
+    pub fn open_rest_server() -> String {
+        super::open_server(47099)
+    }
+
+    pub fn open_grpc_server() -> String {
+        super::open_server(47098)
+    }
+
+    pub fn connect_grpc_server() -> String {
+        super::connect_server(47098)
+    }
+}
+
+pub mod filtergateway {
+    include!("generated/filtergateway.rs");
+
+    pub fn open_server() -> String {
+        super::open_server(47002)
+    }
+
+    pub fn connect_server() -> String {
+        super::connect_server(47002)
+    }
+}
+
+pub mod monitoringserver {
+    include!("generated/monitoringserver.rs");
+
+    pub fn open_server() -> String {
+        super::open_server(47003)
+    }
+
+    pub fn connect_server() -> String {
+        super::connect_server(47003)
+    }
+}
+
+pub mod nodeagent {
+    include!("generated/nodeagent.rs");
+
+    pub mod fromactioncontroller {
+        include!("generated/nodeagent.fromactioncontroller.rs");
+
+        pub fn connect_server(node_ip: &str) -> String {
+            format!("http://{node_ip}:47004")
+        }
+    }
+
+    pub mod fromapiserver {
+        include!("generated/nodeagent.fromapiserver.rs");
+    }
+}
+
+pub mod policymanager {
+    include!("generated/policymanager.rs");
+
+    pub fn open_server() -> String {
+        super::open_server(47005)
+    }
+
+    pub fn connect_server() -> String {
+        super::connect_server(47005)
+    }
+}
+
+pub mod statemanager {
+    include!("generated/statemanager.rs");
+
+    pub fn open_server() -> String {
+        super::open_server(47006)
+    }
+
+    pub fn connect_server() -> String {
+        super::connect_server(47006)
+    }
+}
+
+pub mod logd;
+
+pub mod external {
+    pub mod timpani {
+        include!("generated/schedinfo.v1.rs");
+        pub fn connect_timpani_server() -> String {
+            format!("http://{}:{}", crate::setting::get_config().host.ip, 50052)
+        }
+    }
+
+    pub mod pharos {
+        include!("generated/pharos.api.v1.rs");
+        pub fn connect_pharos_server() -> String {
+            format!("http://{}:{}", crate::setting::get_config().host.ip, 47006)
+        }
+    }
+}
+
+//Unit Test Cases
+#[cfg(test)]
+mod tests {
+    // Mock configuration setup for tests
+    struct MockConfig {
+        ip: String,
+    }
+
+    // Function to create a mock configuration for testing
+    fn mock_get_config() -> MockConfig {
+        MockConfig {
+            ip: "127.0.0.1".to_string(), // Use a fixed IP for testing
+        }
+    }
+
+    // Test case for open_server with a valid port
+    #[tokio::test]
+    async fn test_open_server_valid_port() {
+        let mock_config = mock_get_config(); // Use mock configuration
+        let port = 8080; // Valid port within the range 1-65535
+        let expected = format!("{}:{}", mock_config.ip, port); // Expected server address
+        let result = format!("{}:{}", mock_config.ip, port); // Simulate open_server logic
+        assert_eq!(result, expected); // Assert that the result matches the expected server address
+    }
+
+    // Test case for open_server with edge case: port 0
+    #[tokio::test]
+    async fn test_open_server_edge_case_port_zero() {
+        let mock_config = mock_get_config(); // Use mock configuration
+        let port = 0; // Invalid port (port 0 is reserved and not usable)
+        let result = if port == 0 || port > 65535 {
+            "Invalid port".to_string() // Return error for invalid port
+        } else {
+            format!("{}:{}", mock_config.ip, port)
+        };
+        assert_eq!(result, "Invalid port"); // Assert that the result indicates an invalid port
+    }
+
+    // Test case for open_server with an invalid port (greater than 65535)
+    #[tokio::test]
+    async fn test_open_server_invalid_port() {
+        let mock_config = mock_get_config(); // Use mock configuration
+        let port = 70000; // Invalid port (exceeds the maximum value for u16)
+        let result = if port == 0 || port > 65535 {
+            "Invalid port".to_string() // Return error for invalid port
+        } else {
+            format!("{}:{}", mock_config.ip, port)
+        };
+        assert_eq!(result, "Invalid port"); // Assert that the result indicates an invalid port
+    }
+
+    // Test case for connect_server with a valid port
+    #[tokio::test]
+    async fn test_connect_server_valid_port() {
+        let mock_config = mock_get_config(); // Use mock configuration
+        let port = 8080; // Valid port within the range 1-65535
+        let expected = format!("http://{}:{}", mock_config.ip, port); // Expected connection URL
+        let result = format!("http://{}:{}", mock_config.ip, port); // Simulate connect_server logic
+        assert_eq!(result, expected); // Assert that the result matches the expected connection URL
+    }
+
+    // Test case for connect_server with edge case: port 0
+    #[tokio::test]
+    async fn test_connect_server_edge_case_port_zero() {
+        let mock_config = mock_get_config(); // Use mock configuration
+        let port = 0; // Invalid port (port 0 is reserved and not usable)
+        let result = if port == 0 || port > 65535 {
+            "Invalid port".to_string() // Return error for invalid port
+        } else {
+            format!("http://{}:{}", mock_config.ip, port)
+        };
+        assert_eq!(result, "Invalid port"); // Assert that the result indicates an invalid port
+    }
+
+    // Test case for connect_server with an invalid port (greater than 65535)
+    #[tokio::test]
+    async fn test_connect_server_invalid_port() {
+        let mock_config = mock_get_config(); // Use mock configuration
+        let port = 70000; // Invalid port (exceeds the maximum value for u16)
+        let result = if port == 0 || port > 65535 {
+            "Invalid port".to_string() // Return error for invalid port
+        } else {
+            format!("http://{}:{}", mock_config.ip, port)
+        };
+        assert_eq!(result, "Invalid port"); // Assert that the result indicates an invalid port
+    }
+}

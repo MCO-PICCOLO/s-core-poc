@@ -1,0 +1,434 @@
+---
+# SPDX-FileCopyrightText: Copyright 2024 LG Electronics Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: v1
+kind: Schedule
+metadata:
+  name: perf_18proc_tc1
+spec:
+  - name: p1_0
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 10000
+    release_time: 0
+    runtime: 3000
+    deadline: 10000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p1_1
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 10000
+    release_time: 0
+    runtime: 3000
+    deadline: 10000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p1_2
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 10000
+    release_time: 0
+    runtime: 3000
+    deadline: 10000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p2_0
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 5000
+    release_time: 0
+    runtime: 500
+    deadline: 5000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p2_1
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 5000
+    release_time: 0
+    runtime: 500
+    deadline: 5000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p2_2
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 5000
+    release_time: 0
+    runtime: 500
+    deadline: 5000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p2_3
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 5000
+    release_time: 0
+    runtime: 500
+    deadline: 5000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p2_4
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 5000
+    release_time: 0
+    runtime: 500
+    deadline: 5000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p2_5
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 5000
+    release_time: 0
+    runtime: 500
+    deadline: 5000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p2_6
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 5000
+    release_time: 0
+    runtime: 500
+    deadline: 5000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p2_7
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 5000
+    release_time: 0
+    runtime: 500
+    deadline: 5000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p2_8
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 5000
+    release_time: 0
+    runtime: 500
+    deadline: 5000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p2_9
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 5000
+    release_time: 0
+    runtime: 500
+    deadline: 5000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p3_0
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 10000
+    release_time: 0
+    runtime: 1000
+    deadline: 10000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p3_1
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 10000
+    release_time: 0
+    runtime: 1000
+    deadline: 10000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p3_2
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 10000
+    release_time: 0
+    runtime: 1000
+    deadline: 10000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p3_3
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 10000
+    release_time: 0
+    runtime: 1000
+    deadline: 10000
+    node_id: perf_node
+    max_dmiss: 3
+  - name: p3_4
+    priority: 20
+    policy: FIFO
+    cpu_affinity: 4026531840
+    period: 10000
+    release_time: 0
+    runtime: 1000
+    deadline: 10000
+    node_id: perf_node
+    max_dmiss: 3
+---
+apiVersion: v1
+kind: Scenario
+metadata:
+  name: timpani_test
+spec:
+  condition: null
+  action: launch
+  target: timpani_test
+---
+apiVersion: v1
+kind: Package
+metadata:
+  label: null
+  name: timpani_test
+spec:
+  schedule: perf_18proc_tc1
+  pattern:
+    - type: plain
+  models:
+    - name: test_model1
+      node: lg-NUC11TNHi5
+      resources:
+        volume:
+        network:
+    - name: test_model2
+      node: lg-NUC11TNHi5
+      resources:
+        volume:
+        network:
+    - name: test_model3
+      node: lg-NUC11TNHi5
+      resources:
+        volume:
+        network:
+---
+apiVersion: v1
+kind: Model
+metadata:
+  name: test_model1
+  annotations:
+    io.piccolo.annotations.package-type: timpani_test
+    io.piccolo.annotations.package-name: timpani_test
+    io.piccolo.annotations.package-network: default
+  labels:
+    app: test_model1
+spec:
+  hostNetwork: true
+  containers:
+    - name: p1_0
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p1_0"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p1_1
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p1_1"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p1_2
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p1_2"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+  terminationGracePeriodSeconds: 0
+  restartPolicy: Never
+---
+apiVersion: v1
+kind: Model
+metadata:
+  name: test_model2
+  annotations:
+    io.piccolo.annotations.package-type: timpani_test
+    io.piccolo.annotations.package-name: timpani_test
+    io.piccolo.annotations.package-network: default
+  labels:
+    app: test_model2
+spec:
+  hostNetwork: true
+  containers:
+    - name: p2_0
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p2_0"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p2_1
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p2_1"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p2_2
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p2_2"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p2_3
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p2_3"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p2_4
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p2_4"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p2_5
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p2_5"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p2_6
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p2_6"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p2_7
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p2_7"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p2_8
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p2_8"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p2_9
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p2_9"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+  terminationGracePeriodSeconds: 0
+  restartPolicy: Never
+---
+apiVersion: v1
+kind: Model
+metadata:
+  name: test_model3
+  annotations:
+    io.piccolo.annotations.package-type: timpani_test
+    io.piccolo.annotations.package-name: timpani_test
+    io.piccolo.annotations.package-network: default
+  labels:
+    app: test_model3
+spec:
+  hostNetwork: true
+  containers:
+    - name: p3_0
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p3_0"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p3_1
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p3_1"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p3_2
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p3_2"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p3_3
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p3_3"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+    - name: p3_4
+      image: ghcr.io/mco-piccolo/timpani_test:latest
+      command: ["./sample_apps", "-a", "2", "-l", "5", "p3_4"]
+      securityContext:
+        capabilities:
+          add: ["SYS_NICE"]
+      resources:
+        limits:
+          cpu: "3"
+  terminationGracePeriodSeconds: 0
+  restartPolicy: Never

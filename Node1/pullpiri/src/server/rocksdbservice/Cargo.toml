@@ -1,0 +1,24 @@
+[package]
+name = "rocksdbservice"
+version = "0.1.0"
+edition = "2021"
+authors = ["LG Electronics Inc."]
+license = "Apache-2.0"
+description = "Pullpiri RocksDB gRPC Service"
+
+[dependencies]
+rocksdb = "0.24.0"
+tokio = { version = "1.43.1", features = ["full"] }
+tonic = "0.12.3"
+prost = "0.13.3"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+anyhow = "1.0.101"
+clap = { version = "4.5.47", features = ["derive"] }
+
+[dependencies.common]
+path = "../../common"
+
+[[bin]]
+name = "test_put_get"
+path = "src/bin/test_put_get.rs"

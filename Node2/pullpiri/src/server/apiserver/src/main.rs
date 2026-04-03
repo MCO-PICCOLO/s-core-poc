@@ -1,0 +1,42 @@
+/*
+ * SPDX-FileCopyrightText: Copyright 2024 LG Electronics Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+//! The Apiserver provides internal/external APIs for Piccolo operations
+//! and performs registration and preparation tasks for scenarios and other
+//! artifacts.
+//!
+//! * Open a REST API to communicate with Piccolo Cloud or receive artifacts
+//!   directly.
+//! * Appropriately parse the received string-type artifacts so that they can
+//!   be used within Piccolo.
+//! * The parsing results are stored in etcd and passed to filtergateway so
+//!   that a filter can be created.
+
+mod artifact;
+mod grpc;
+mod manager;
+mod node;
+mod route;
+
+use common::logd;
+use common::logd::logger;
+
+/// Main function of Piccolo API Server
+#[cfg(feature = "tarpaulin_include")]
+fn main() {
+    // Dummy main for coverage builds
+    logd!(0, "Tarpaulin coverage build: main function stub.");
+}
+#[cfg(not(feature = "tarpaulin_include"))]
+#[tokio::main]
+async fn main() {
+    let _ = logger::init_async_logger("apiserver").await;
+    logd!(1, "initiailize api server");
+
+    manager::initialize().await
+}
+
+//UNIT TEST CASES
+//main() itself is not directly testable in typical unit test form because it's an entry point with #[tokio::main]

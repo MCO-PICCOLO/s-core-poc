@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: Copyright 2024 LG Electronics Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[workspace]
+resolver = "2"
+
+members = [
+#    "agent/nodeagent",
+    "player/actioncontroller",
+    "player/filtergateway",
+    "player/statemanager",
+    "server/apiserver",
+    "server/monitoringserver",
+    "server/policymanager",
+    "server/settingsservice",
+    "server/logservice",
+    "server/persistency-service",
+#   "server/rocksdbservice",
+]
+exclude = [
+    "server/rocksdbservice",
+    "agent/nodeagent",
+]
+
+[workspace.dependencies]
+common = { path = "./common" }

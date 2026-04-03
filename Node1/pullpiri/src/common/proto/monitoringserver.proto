@@ -1,0 +1,63 @@
+/*
+ * SPDX-FileCopyrightText: Copyright 2024 LG Electronics Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package monitoringserver;
+
+service MonitoringServerConnection {
+  rpc SendContainerList (ContainerList) returns (SendContainerListResponse);
+  rpc SendNodeInfo (NodeInfo) returns (SendNodeInfoResponse);
+  rpc SendStressMonitoringMetric (StressMonitoringMetric) returns (StressMonitoringMetricResponse);
+}
+
+message SendContainerListResponse {
+  string resp = 1;
+}
+
+message SendNodeInfoResponse {
+  string resp = 1;
+}
+
+message ContainerList {
+  string node_name =1;
+  repeated ContainerInfo containers = 2;
+}
+
+message ContainerInfo {
+  string id = 1;
+  repeated string names = 2;
+  string image = 3;
+  map<string, string> state = 4;
+  map<string, string> config = 5;
+  map<string, string> annotation = 6;
+  map<string, string> stats = 7;
+}
+
+message NodeInfo {
+  string node_name = 1;
+  double cpu_usage = 2;
+  uint64 cpu_count = 3;
+  uint64 gpu_count = 4;
+  uint64 used_memory = 5;
+  uint64 total_memory = 6;
+  double mem_usage = 7;
+  uint64 rx_bytes = 8;
+  uint64 tx_bytes = 9;
+  uint64 read_bytes = 10;
+  uint64 write_bytes = 11;
+  string os = 12;
+  string arch = 13;
+  string ip = 14;
+}
+
+// Stress monitoring metric: single JSON string payload from App Data Provider
+message StressMonitoringMetric {
+  string json = 1; // JSON string containing process_name, pid, core_masking, core_count, fps, latency, cpu_loads, etc.
+}
+
+message StressMonitoringMetricResponse {
+  string resp = 1;
+}

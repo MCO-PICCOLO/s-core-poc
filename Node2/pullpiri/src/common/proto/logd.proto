@@ -1,0 +1,19 @@
+syntax = "proto3";
+package logd;
+
+enum Level {
+  LEVEL_UNSPECIFIED = 0;
+  LEVEL_VERBOSE = 1;
+  LEVEL_DEBUG   = 2;
+  LEVEL_INFO    = 3;
+  LEVEL_WARN    = 4;
+  LEVEL_ERROR   = 5;
+  LEVEL_FATAL   = 6;
+}
+
+message LogEnvelope {
+  uint64 ts_real_ns = 1;
+  string tag        = 2;
+  Level  level      = 3;
+  string message    = 4;
+}

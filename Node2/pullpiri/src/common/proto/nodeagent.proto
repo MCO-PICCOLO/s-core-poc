@@ -1,0 +1,31 @@
+/*
+ * SPDX-FileCopyrightText: Copyright 2024 LG Electronics Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package nodeagent;
+
+import "nodeagent/fromactioncontroller.proto";
+import "nodeagent/fromapiserver.proto";
+
+service NodeAgentConnection {
+  // from API-SERVER : Handle YAML
+  rpc HandleYaml(nodeagent.fromapiserver.HandleYamlRequest)
+      returns (nodeagent.fromapiserver.HandleYamlResponse);
+
+  // from API-SERVER : Clustering functionality
+  rpc RegisterNode(nodeagent.fromapiserver.NodeRegistrationRequest)
+      returns (nodeagent.fromapiserver.NodeRegistrationResponse);
+  rpc ReportStatus(nodeagent.fromapiserver.StatusReport)
+      returns (nodeagent.fromapiserver.StatusAck);
+  rpc Heartbeat(nodeagent.fromapiserver.HeartbeatRequest)
+      returns (nodeagent.fromapiserver.HeartbeatResponse);
+  rpc ReceiveConfig(nodeagent.fromapiserver.ConfigRequest)
+      returns (nodeagent.fromapiserver.ConfigResponse);
+
+  // from ACTION-CONTROLLER : Handle workload (container)
+  rpc HandleWorkload(nodeagent.fromactioncontroller.HandleWorkloadRequest)
+      returns (nodeagent.fromactioncontroller.HandleWorkloadResponse);
+}

@@ -1,0 +1,18 @@
+# TTRT Global Scheduler - Node Configuration File
+# 각 노드의 하드웨어 사양 및 가용 리소스 정의
+
+nodes:
+  perf_node:
+    available_cpus: [0, 1, 2, 3]
+    max_memory_mb: 2048
+    architecture: "x86_64"
+    location: "front_sensor_unit"
+    description: "Autonomous driving perception and sensor fusion node"
+
+  safety_node:
+    available_cpus: [0, 1, 2, 3]
+    max_memory_mb: 2048
+    architecture: "x86_64"
+    location: "front_sensor_unit"
+    description: "Autonomous driving perception and sensor fusion node"
+
