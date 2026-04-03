@@ -31,13 +31,45 @@ with the **Pullpiri** middleware stack.
 
 ---
 
+## How to Run
+
+```bash
+cd lifecycle/lifecycle/examples/pullpiri_LM
+sudo ./run.sh
+```
+
+`run.sh` does:
+1. Bazel build lifecycle (LM binary + flatbuffer configs)
+2. Cargo build mini-adas with lifecycle feature
+3. Install binaries + `.so` to `/opt/pullpiri/`
+4. Copy flatbuffer configs to `etc/` and `/opt/pullpiri/etc/`
+5. Copy `hm_config.json` to `/opt/pullpiri/bin/etc/`
+6. Launch `launch_manager`
+
+---
+
 ## Step-by-Step Flow
 
 ### Startup
-1. LM reads `lm_demo.bin` (which components to run, in what order).
+1. LM reads `lm_demo.bin` (which components to run, in what order):
+
+  **Startup Order:**
+
+  persistency-service
+  → policymanager
+  → apiserver
+  → monitoringserver
+  → statemanager
+  → filtergateway
+  → actioncontroller
+  → timpani-o
+  → adas_primary
+  → adas_secondary_1
+  → adas_secondary_2
+
 2. LM reads `hm_demo.bin` + `hmcore.bin` (HM daemon rules – which processes are supervised).
 3. LM starts Pullpiri services first (persistency, apiserver, statemanager, etc.).
-4. LM starts `adas_primary` with env vars `PROCESSIDENTIFIER=adas_primary`, `CONFIG_PATH=...`.
+4. LM starts `adas_primary` with env vars `PROCESSIDENTIFIER=adas_primary`.
 5. `adas_primary` starts its internal HM client → loads `./etc/hm_config.json`.
 6. `adas_primary` calls `lifecycle_client_rs::report_execution_state_running()` → tells LM it is ready.
 7. LM marks it **Running**. Starts `adas_secondary_1` and `adas_secondary_2`.
@@ -101,7 +133,7 @@ full Startup set — effectively a full system restart.
 
 ## Binaries Required from mini-adas
 
-Built from `hari/SCORE_bk_lm/feo/examples/rust/mini-adas/` with
+Built from `~feo/examples/rust/mini-adas/` with
 `--features "signalling_relayed_tcp,lifecycle"`:
 
 | Binary / File | Deployed to |
@@ -131,23 +163,6 @@ These numbers must stay aligned. Changing `supervisor_api_cycle_ms` without upda
 `reporting_cycle` (or vice versa) causes spurious alive supervision failures.
 
 **Rule: `supervisor_api_cycle_ms` == `reporting_cycle × 1000` (i.e., same period in ms)**
-
----
-
-## How to Run
-
-```bash
-cd lifecycle/lifecycle/examples/pullpiri_LM
-sudo ./run.sh
-```
-
-`run.sh` does:
-1. Bazel build lifecycle (LM binary + flatbuffer configs)
-2. Cargo build mini-adas with lifecycle feature
-3. Install binaries + `.so` to `/opt/pullpiri/`
-4. Copy flatbuffer configs to `etc/` and `/opt/pullpiri/etc/`
-5. Copy `hm_config.json` to `/opt/pullpiri/bin/etc/`
-6. Launch `launch_manager`
 
 ---
 
