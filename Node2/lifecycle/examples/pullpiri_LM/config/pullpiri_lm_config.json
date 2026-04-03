@@ -1,0 +1,90 @@
+{
+    "schema_version": 1,
+    "defaults": {
+        "deployment_config": {
+            "bin_dir": "/opt/pullpiri/bin",
+            "ready_timeout": 5.0,
+            "shutdown_timeout": 2.0,
+            "ready_recovery_action": {
+                "restart": {
+                    "number_of_attempts": 3,
+                    "delay_before_restart": 0.5
+                }
+            },
+            "recovery_action": {
+                "switch_run_target": {
+                    "run_target": "Recovery"
+                }
+            }
+        },
+        "component_properties": {
+            "application_profile": {
+                "application_type": "Native",
+                "is_self_terminating": false
+            },
+            "ready_condition": {
+                "process_state": "Running"
+            }
+        }
+    },
+    "components": {
+        "nodeagent": {
+            "component_properties": {
+                "binary_name": "nodeagent",
+                "depends_on": []
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "nodeagent"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        },
+        "timpani-n": {
+            "component_properties": {
+                "binary_name": "timpani-n",
+                "process_arguments": [
+                    "-n",
+                    "perf_node",
+                    "-c",
+                    "1",
+                    "-P",
+                    "85",
+                    "-p",
+                    "7777",
+                    "-l",
+                    "4",
+                    "10.221.40.35"
+                ],
+                "depends_on": []
+            },
+            "deployment_config": {
+                "environmental_variables": {
+                    "PROCESSIDENTIFIER": "timpani-n"
+                },
+                "sandbox": {
+                    "uid": 0,
+                    "gid": 0
+                }
+            }
+        }
+    },
+    "run_targets": {
+        "Startup": {
+            "depends_on": [
+                "nodeagent",
+                "timpani-n"
+            ]
+        },
+        "Recovery": {
+            "depends_on": []
+        }
+    },
+    "initial_run_target": "Startup",
+    "fallback_run_target": {
+        "depends_on": []
+    }
+}
