@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: Copyright 2026 LG Electronics Inc.
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "timpani-o"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Timpani-O global scheduler – Rust port of the C++ implementation"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "timpani-o"
+path = "src/main.rs"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# gRPC framework
+tonic = "0.12"
+
+# Protobuf serialisation (used by tonic)
+prost = "0.13"
+
+# Generic serialisation / deserialisation framework
+serde = { version = "1", features = ["derive"] }
+
+# YAML parsing – used for node_configurations.yaml
+serde_yaml = "0.9"
+
+# Structured, async-aware logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# Ergonomic error handling (ideal for application-level code)
+anyhow = "1"
+
+# Derive macros for structured error types (used in scheduler error enums)
+thiserror = "1"
+
+# CLI argument parsing – mirrors getopt_long() used in the C++ main
+clap = { version = "4", features = ["derive"] }
+
+[dev-dependencies]
+# Creates temporary files in tests (used by config module tests)
+tempfile = "3"
+
+[build-dependencies]
+# Compiles .proto files into Rust modules (wraps prost-build + tonic stubs)
+tonic-build = "0.12"

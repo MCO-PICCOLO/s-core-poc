@@ -1,0 +1,42 @@
+---
+apiVersion: v1
+kind: Schedule
+metadata:
+  name: sea-schedule
+spec:
+  - name: sea_app
+    priority: 50
+    policy: FIFO
+    cpu_affinity: 4     # pin to specific CPU if needed
+    period: 10000      # 10 ms in microseconds (100 Hz)
+    release_time: 0
+    runtime: 1000     # 1 ms = 2× measured 0.5 ms average latency
+    deadline: 10000    # deadline == period
+    node_id: perf_node
+    max_dmiss: 10
+---
+apiVersion: v1
+kind: Scenario
+metadata:
+  name: safe-exit-assist
+spec:
+  condition: null
+  action: reschedule
+  target: safe-exit-assist
+---
+apiVersion: v1
+kind: Package
+metadata:
+  label: null
+  name: safe-exit-assist
+spec:
+  schedule: sea-schedule
+  pattern:
+    - type: plain
+  models:
+    - name: sea-app
+      node: lg-NUC11TNHi5
+      resources:
+        volume:
+        network:
+

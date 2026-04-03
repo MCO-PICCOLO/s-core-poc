@@ -1,0 +1,5 @@
+# Rust build artefacts
+target/
+
+# Developer-local notes (not for the repo)
+DEVELOPER_NOTES.md

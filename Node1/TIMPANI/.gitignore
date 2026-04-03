@@ -1,0 +1,128 @@
+# General
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.swo
+*.pid
+*.seed
+
+# Build directories
+/build/
+/build-*/
+/out/
+/bin/
+/lib/
+/obj/
+/dist/
+/release/
+/install/
+/_InstallLocation/
+/_InstallManifest
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+install_manifest.txt
+CTestTestfile.cmake
+Testing/
+
+# Compiled objects and binaries
+*.o
+*.obj
+*.so
+*.a
+*.dll
+*.exe
+*.out
+*.elf
+*.ko
+
+# Rust / Cargo
+/target/
+/**/target/
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+venv/
+env/
+.env
+.env.*
+
+# Java
+*.class
+*.jar
+*.war
+
+# Protobuf / generated sources
+**/*.pb.h
+**/*.pb.cc
+**/*.pb.c
+**/*.pb.cpp
+**/*.pb.rs
+**/*.pb.go
+**/gen/
+
+# IDEs & editors
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# GitHub Actions / CI artifacts
+*.cache
+*.coverage
+coverage/
+htmlcov/
+pytest_cache/
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.yml
+**/Dockerfile.*.cache
+
+# System / OS
+*.DS_Store
+ehthumbs.db
+Icon?
+
+# Archives & packages
+*.tar
+*.tar.gz
+*.zip
+*.7z
+*.rar
+
+# Secrets / keys
+*.key
+*.pem
+*.crt
+*.p12
+.env.local
+
+# Misc
+.tags
+ctags.out
+*.orig
+
+**/target
+.vscode/
+node_modules/
+/dist/
+
+# Build artifacts and logs
+*.log
+*_output.txt
+*_results.log
+dist/reports/
+etcd.log

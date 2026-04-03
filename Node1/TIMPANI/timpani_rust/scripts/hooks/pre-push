@@ -1,0 +1,45 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: Copyright 2026 LG Electronics Inc.
+# SPDX-License-Identifier: MIT
+#
+# pre-push hook — runs all CI checks locally before a push is sent.
+# Install once with: just setup   (from the timpani_rust/ directory)
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+RUST_ROOT="$REPO_ROOT/timpani_rust"
+
+cd "$RUST_ROOT"
+
+echo "╔══════════════════════════════════════╗"
+echo "║  Timpani-Rust pre-push checks        ║"
+echo "╚══════════════════════════════════════╝"
+
+echo ""
+echo "▶ cargo fmt --check ..."
+cargo fmt --all -- --check
+echo "  ✅ fmt"
+
+echo ""
+echo "▶ cargo clippy ..."
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+echo "  ✅ clippy"
+
+echo ""
+echo "▶ cargo deny check ..."
+cargo deny check
+echo "  ✅ deny"
+
+echo ""
+echo "▶ cargo build ..."
+cargo build --workspace --quiet
+echo "  ✅ build"
+
+echo ""
+echo "▶ cargo test ..."
+cargo test --workspace --quiet
+echo "  ✅ tests"
+
+echo ""
+echo "✅ All checks passed — push proceeding."

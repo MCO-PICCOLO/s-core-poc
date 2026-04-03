@@ -1,0 +1,11 @@
+# Cargo workspace configuration for FEO
+#
+# This config ensures that when building with the "lifecycle" feature,
+# the Rust linker can find the C++ library liblifecycle_client.so
+# built by Bazel in the lifecycle repo.
+
+[build]
+rustflags = [
+  # Add the Bazel output directory for lifecycle_client library
+  "-L", "/home/acrn/new_ak/vso_score/lifecycle/lifecycle/bazel-bin/src/launch_manager_daemon/lifecycle_client_lib",
+]

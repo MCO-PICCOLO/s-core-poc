@@ -15,7 +15,7 @@ use tonic::{Request, Response, Status};
 /// and Package artifacts to apply when a deadline-miss fault is received.
 /// Edit this path to point to wherever the reschedule spec is stored.
 const RESCHEDULE_YAML_PATH: &str =
-    "/home/acrn/new_ak/vso_score/pullpiri/examples/resources/reschdule.yaml";
+    "/home/acrn/new_ak/vso_score/pullpiri/examples/resources/reschedule_sea.yaml";
 
 /// Per-workload reschedule state.
 /// Once a workload is inserted here, all further deadline-miss faults for it
@@ -26,7 +26,7 @@ fn rescheduled() -> &'static Mutex<HashSet<String>> {
     RESCHEDULED.get_or_init(|| Mutex::new(HashSet::new()))
 }
 
-/// Read `reschdule.yaml`, parse every `---`-separated document, write each one
+/// Read `reschedule_sea.yaml`, parse every `---`-separated document, write each one
 /// into the DB under `{Kind}/{name}`, and return the Scenario name found.
 ///
 /// This mirrors what `apiserver::artifact::apply` does, so the DB ends up with

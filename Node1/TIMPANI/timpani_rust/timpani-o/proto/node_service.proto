@@ -1,0 +1,176 @@
+syntax = "proto3";
+
+package schedinfo.v1;
+
+// ── Overview ──────────────────────────────────────────────────────────────────
+//
+// NodeService is served by Timpani-O and consumed by every Timpani-N node.
+// It replaces the D-Bus / libtrpc transport used in the C++ implementation.
+//
+// Timpani-N startup sequence:
+//   1. Connect to Timpani-O and call GetSchedInfo → receive its task list.
+//   2. Call SyncTimer → block until all active nodes in the workload have
+//      checked in.  Timpani-O responds to all callers simultaneously with the
+//      same absolute wall-clock start time.
+//   3. Arm a CLOCK_REALTIME timer for start_time and begin the RT loop.
+//   4. On every deadline miss: call ReportDMiss → Timpani-O forwards to
+//      Piccolo via FaultService.
+//
+// Design notes
+// ─────────────
+// • SyncTimer is a blocking unary RPC (server holds it open until all active
+//   nodes have called in).  This replaces the 100 ms polling loop that
+//   trpc_client_sync() used in the C++ implementation.
+// • GetSchedInfo filters by node_id and returns only that node's tasks.
+//   The C++ D-Bus path sent every node's tasks in one buffer; each Timpani-N
+//   had to scan for its own node_id.  The gRPC design is more efficient and
+//   avoids leaking other nodes' scheduling parameters across the network.
+// • DeadlineMissInfo mirrors the two arguments of trpc_client_dmiss() exactly:
+//   (node_id, task_name).  Timpani-O looks up the workload_id itself.
+
+service NodeService {
+  // Timpani-N calls this at startup to pull its assigned schedule.
+  // Returns only the tasks assigned to the requesting node.
+  // If no workload has been submitted yet, the server returns NOT_FOUND.
+  rpc GetSchedInfo (NodeSchedRequest) returns (NodeSchedResponse) {}
+
+  // Barrier synchronisation.  Timpani-N registers its readiness here.
+  // The server blocks the response until every node that received tasks in
+  // the active workload has called SyncTimer.  When all nodes have checked in,
+  // every pending SyncTimer call receives the same start_time simultaneously.
+  //
+  // Late-joiner behaviour: if the barrier has already been released for the
+  // current workload, the server responds immediately with the recorded
+  // start_time (which will be in the past).  Timpani-N is responsible for
+  // computing the next valid hyperperiod boundary as:
+  //   T₀ + ceil((now - T₀) / hyperperiod_us) * hyperperiod_us
+  //
+  // If the workload is replaced while a node is waiting, the RPC returns
+  // ABORTED so Timpani-N can reconnect and call GetSchedInfo again.
+  rpc SyncTimer (SyncRequest) returns (SyncResponse) {}
+
+  // Timpani-N calls this whenever a task misses its deadline.
+  // Timpani-O resolves the workload_id from its internal store and forwards
+  // the event to Piccolo via FaultService.NotifyFault.
+  rpc ReportDMiss (DeadlineMissInfo) returns (NodeResponse) {}
+}
+
+// ── GetSchedInfo ──────────────────────────────────────────────────────────────
+
+message NodeSchedRequest {
+  // Timpani-N node identifier.  Must match a key in node_configurations.yaml
+  // and must appear in the active workload's scheduled output.
+  string node_id = 1;
+}
+
+// A single task as output by GlobalScheduler, ready to apply via
+// sched_setscheduler / sched_setaffinity on the target node.
+//
+// Field names and units are chosen to match sched_task_t (schedinfo_service.h)
+// and task_info (timpani-n/src/schedinfo.h) directly, so that the Timpani-N
+// port can map fields without conversion.
+message ScheduledTask {
+  // Task name.  At most 16 characters in Timpani-N (TINFO_NAME_MAX) — not
+  // enforced by the proto but callers should be aware of the limit.
+  string name             = 1;
+
+  // Linux real-time scheduling priority (1–99 for FIFO/RR; 0 for NORMAL).
+  // Passed directly to sched_setattr / sched_setscheduler.
+  int32  sched_priority   = 2;
+
+  // Linux scheduling policy integer:
+  //   0 = SCHED_NORMAL (SCHED_OTHER)
+  //   1 = SCHED_FIFO
+  //   2 = SCHED_RR
+  // Stored as int32 to match the Linux ABI directly; no SchedPolicy enum
+  // import is needed on the Timpani-N side.
+  int32  sched_policy     = 3;
+
+  // Period in microseconds.  Timpani-N converts to ns for timer arming.
+  int32  period_us        = 4;
+
+  // Release time offset within the hyperperiod, in microseconds.
+  // Zero means "fire at the start of each hyperperiod cycle".
+  int32  release_time_us  = 5;
+
+  // Worst-case execution time budget (runtime) in microseconds.
+  // Used for SCHED_DEADLINE runtime parameter.
+  int32  runtime_us       = 6;
+
+  // Relative deadline in microseconds.
+  // Used for SCHED_DEADLINE deadline parameter and deadline-miss detection.
+  int32  deadline_us      = 7;
+
+  // CPU affinity bitmask: bit N set means the task may run on CPU N.
+  // 0 or 0xFFFFFFFF means "any CPU" (matches CpuAffinity::Any in Rust).
+  // Passed to sched_setaffinity / set_affinity_cpumask.
+  uint64 cpu_affinity     = 8;
+
+  // Maximum number of consecutive deadline misses before the node reports
+  // a fault to Timpani-O.
+  int32  max_dmiss        = 9;
+
+  // The node this task was assigned to by GlobalScheduler.
+  // Redundant when filtering per-node (it will always equal the requesting
+  // node_id), but included so the response is self-describing and so that
+  // multi-node debug dumps are unambiguous.
+  string assigned_node    = 10;
+}
+
+message NodeSchedResponse {
+  // Workload identifier this schedule was computed for.
+  string workload_id        = 1;
+
+  // Hyperperiod in microseconds — LCM of all task periods in this workload.
+  // Timpani-N uses this to initialise its hp_manager and set the outer timer.
+  uint64 hyperperiod_us     = 2;
+
+  // All tasks assigned to the requesting node, in the order produced by
+  // GlobalScheduler.  May be empty if the node was not needed for this
+  // workload (GetSchedInfo still succeeds; Timpani-N idles).
+  repeated ScheduledTask tasks = 3;
+}
+
+// ── SyncTimer ─────────────────────────────────────────────────────────────────
+
+message SyncRequest {
+  // Node declaring itself ready to start the RT loop.
+  string node_id = 1;
+}
+
+message SyncResponse {
+  // true  = all active nodes have checked in; start_time_* fields are valid.
+  // false = barrier timed out or was cancelled; caller should abort and retry.
+  bool  ack              = 1;
+
+  // Absolute start time for the first hyperperiod timer, split into seconds
+  // and nanoseconds to map directly to struct timespec used in Timpani-N.
+  // Clock domain: CLOCK_REALTIME (to be changed to CLOCK_TAI when gPTP is
+  // integrated — see DEVELOPER_NOTES.md D-020).
+  //
+  // Valid only when ack = true.
+  int64 start_time_sec   = 2;
+  int32 start_time_nsec  = 3;
+}
+
+// ── ReportDMiss ───────────────────────────────────────────────────────────────
+
+// Mirrors the two arguments of trpc_client_dmiss(dbus, node_id, taskname).
+// Timpani-O resolves workload_id internally from the current workload store
+// (it knows which tasks are on which node) before forwarding to Piccolo.
+message DeadlineMissInfo {
+  // Node where the miss occurred.
+  string node_id   = 1;
+  // Name of the task that missed its deadline.
+  string task_name = 2;
+}
+
+// Simple response for ReportDMiss.
+// Defined here rather than reusing schedinfo.v1.Response so that node_service
+// remains a self-contained proto that Timpani-N can depend on independently.
+message NodeResponse {
+  // 0 = success, non-zero = error.
+  int32  status        = 1;
+  // Human-readable error detail.  Empty on success.
+  string error_message = 2;
+}
