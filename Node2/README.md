@@ -24,6 +24,29 @@ sudo ./run.sh
 - The workspace should contain the required source files and Bazel build targets.
 - `nodeagent` and `timpani-n`
 
+ ## Node 2 — Worker Setup & Launch
+Step 1 — Check and Clean the Container
+Before starting, make sure no stale sea-app container is running:
+
+podman ps -a
+If sea-app appears in the list:
+
+podman rm -f sea-app
+Step 2 — Configure NodeAgent with Correct IPs
+Edit /etc/piccolo/nodeagent.yaml to point to Node 1 as the master and set this node's own IP:
+
+sudo nano /etc/piccolo/nodeagent.yaml
+Set these fields:
+
+nodeagent:
+  node_name: "<NODE2_HOSTNAME>"   # hostname of Node 2 (run: hostname)
+  node_type: "vehicle"
+  node_role: "nodeagent"
+  master_ip: "<NODE1_IP>"         # ← Node 1 IP
+  node_ip:   "<NODE2_IP>"         # ← Node 2 IP
+  grpc_port: 47004
+  log_level: "info"
+
 # Node2: Building and Running nodeagent with Lifecycle Launch manager
 
 Node2 is responsible for building the Pullpiri `nodeagent` binary (note: the binary is around 100MB and cannot be uploaded to GitHub, so it must be built locally on Node2) and running the integration using its own run script.
