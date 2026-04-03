@@ -86,10 +86,10 @@ Node2 is responsible for building the Pullpiri `nodeagent` binary (note: the bin
 
 After building, run the Node2 integration using the provided run script:
 
-- [Node2 run.sh instructions](Node2/lifecycle/examples/pullpiri_LM/README.md)
+For more details and system setup, see the [Node2 README](Node2/README.md).
 - [Direct link to Node2 run.sh script](Node2/lifecycle/examples/pullpiri_LM/run.sh)
 
-For more details and system setup, see the [Node2 README](Node2/README.md).
+
 
 ---
 
