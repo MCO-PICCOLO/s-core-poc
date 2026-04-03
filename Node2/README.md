@@ -74,6 +74,8 @@ Run the workflow in this order:
    ```
 2. Run the Lifecycle Launch Manager script:
    ```sh
+   ### check if sea_app container is running, and remove it before running below
+  sudo podman rm -f sea-app_sea-app
    cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
    sudo ./run.sh
    ```
