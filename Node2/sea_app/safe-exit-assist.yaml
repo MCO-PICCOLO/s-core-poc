@@ -45,7 +45,7 @@ spec:
     - type: plain
   models:
     - name: sea-app
-      node: lg-NUC11TNHi5
+      node: HPC
       resources:
         volume:
         network:
@@ -68,9 +68,9 @@ spec:
   containers:
     - name: sea-app
       # TODO: replace with actual registry path once the image is pushed
-      image: sdv.lge.com/demo/sea_app
+      image: sdv.lge.com/demo/sea_app:1.0
   terminationGracePeriodSeconds: 0
-  restartPolicy: Never
+  restartPolicy: Always
 
 ---
 # ── Timpani-N Schedule ───────────────────────────────────────────────────────

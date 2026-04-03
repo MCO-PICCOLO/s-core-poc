@@ -14,7 +14,7 @@ FROM debian:bookworm-slim
 
 WORKDIR /app
 
-COPY target/debug/sea_app /app/sea_app
+COPY target/release/sea_app /app/sea_app
 
 ENV RUST_LOG=warn
 

@@ -87,12 +87,12 @@ metadata:
   name: sea-schedule
 spec:
   - name: sea_app
-    priority: 20
+    priority: 50
     policy: FIFO
-    cpu_affinity: 4026531840   # all CPUs — pin to a specific CPU if needed
-    period: 200000             # 200 ms in microseconds (5 Hz)
+    cpu_affinity: 2   # all CPUs — pin to a specific CPU if needed
+    period: 10000            # 10 ms in microseconds (100 Hz)
     release_time: 0
-    runtime: 160000            # 160 ms = 2× measured 80 ms average latency
-    deadline: 200000           # deadline == period
+    runtime: 1000           # 1 ms = 2× measured 0.5 ms average latency
+    deadline: 10000           # deadline == period
     node_id: perf_node
-    max_dmiss: 3
+    max_dmiss: 10

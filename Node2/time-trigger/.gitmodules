@@ -1,6 +1,0 @@
-[submodule "libtrpc"]
-	path = libtrpc
-	url = http://mod.lge.com/hub/timpani/libtrpc.git
-[submodule "libbpf"]
-	path = libbpf
-	url = https://github.com/libbpf/libbpf.git

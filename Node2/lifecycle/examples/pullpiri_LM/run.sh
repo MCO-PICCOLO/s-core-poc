@@ -68,9 +68,9 @@ sudo cp "$CFG_DIR/hmcore.bin"   "$ETC_DIR/hmcore.bin"
 # ---- Step 3: Sync Pullpiri Binaries ----
 echo ""
 echo "[3/5] Syncing nodeagent and timpani-n binaries to /opt/pullpiri/bin ..."
-# Prefer binaries located at the workspace root (provided by the user)
+# Resolve binaries from workspace-root-relative locations
 NODEAGENT_BIN="$WORKSPACE_ROOT/nodeagent"
-TIMP_N_BIN="$WORKSPACE_ROOT/timpani-n"
+TIMP_N_BIN="$WORKSPACE_ROOT/../TIMPANI/timpani-n/build/timpani-n"
 
 sudo mkdir -p /opt/pullpiri/bin
 
