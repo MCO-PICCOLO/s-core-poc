@@ -1,0 +1,103 @@
+# SPDX-FileCopyrightText: Copyright 2026 LG Electronics Inc.
+# SPDX-License-Identifier: MIT
+
+# Example workload for piccolo-sim
+#
+# Field names match the proto definition in schedinfo.proto (TaskInfo message):
+#
+#   name          – task name (string)
+#   node_id       – target node, must match a key in node_configurations.yaml
+#   priority      – Linux real-time priority (1-99; higher = more urgent)
+#   policy        – sched policy: 0=NORMAL  1=SCHED_FIFO  2=SCHED_RR
+#   cpu_affinity  – bitmask; 0 means "any"
+#                   CPU0→1  CPU1→2  CPU2→4  CPU3→8  CPU4→16  CPU5→32
+#                   CPU6→64 CPU7→128
+#   period        – task period in microseconds
+#   runtime       – worst-case execution time in microseconds (≤ deadline)
+#   deadline      – relative deadline in microseconds (≤ period)
+#   release_time  – phase offset in microseconds (normally 0)
+#   max_dmiss     – allowed consecutive deadline misses (0 = none tolerated)
+#
+# To fire the full test chain:
+#   1. cargo run -p timpani-o -- --nodeconfig examples/node_configurations.yaml
+#   2. cargo run -p test-tools --bin piccolo-sim -- -w workloads/example_workload.yaml
+#   3. cargo run -p test-tools --bin node-sim  -- --nodes node01,node02,node03 \
+#          --dmiss node01:task_safety --dmiss-delay-ms 2000
+
+workload_id: "test_workload"
+
+tasks:
+  # ── node01 ────────────────────────────────────────────────────────────────
+  # Safety-critical control task: strict FIFO, no deadline misses allowed.
+  - name:         "task_safety"
+    node_id:      "node01"
+    priority:     80
+    policy:       1       # SCHED_FIFO
+    cpu_affinity: 0       # any available CPU
+    period:       10000   # 10 ms
+    runtime:      500     # 0.5 ms  (util = 5 %)
+    deadline:     10000
+    release_time: 0
+    max_dmiss:    0
+
+  # Sensor fusion: lower priority, tolerates occasional late completions.
+  - name:         "task_sensor"
+    node_id:      "node01"
+    priority:     70
+    policy:       1
+    cpu_affinity: 0
+    period:       20000   # 20 ms
+    runtime:      1000    # 1 ms   (util = 5 %)
+    deadline:     20000
+    release_time: 0
+    max_dmiss:    3
+
+  # ── node02 ────────────────────────────────────────────────────────────────
+  # High-frequency actuator control: tightest period, no misses allowed.
+  - name:         "task_control"
+    node_id:      "node02"
+    priority:     90
+    policy:       1
+    cpu_affinity: 0
+    period:       5000    # 5 ms
+    runtime:      200     # 0.2 ms  (util = 4 %)
+    deadline:     5000
+    release_time: 0
+    max_dmiss:    0
+
+  # System monitor: best-effort inside real-time envelope.
+  - name:         "task_monitor"
+    node_id:      "node02"
+    priority:     60
+    policy:       1
+    cpu_affinity: 0
+    period:       20000   # 20 ms
+    runtime:      2000    # 2 ms   (util = 10 %)
+    deadline:     20000
+    release_time: 0
+    max_dmiss:    5
+
+  # ── node03 ────────────────────────────────────────────────────────────────
+  # Navigation task: 40 ms period, moderate load.
+  - name:         "task_nav"
+    node_id:      "node03"
+    priority:     50
+    policy:       1
+    cpu_affinity: 0
+    period:       40000   # 40 ms
+    runtime:      3000    # 3 ms   (util = 7.5 %)
+    deadline:     40000
+    release_time: 0
+    max_dmiss:    3
+
+  # Communication handler: round-robin, lowest priority.
+  - name:         "task_comm"
+    node_id:      "node03"
+    priority:     40
+    policy:       2       # SCHED_RR
+    cpu_affinity: 0
+    period:       40000   # 40 ms
+    runtime:      2000    # 2 ms   (util = 5 %)
+    deadline:     40000
+    release_time: 0
+    max_dmiss:    5

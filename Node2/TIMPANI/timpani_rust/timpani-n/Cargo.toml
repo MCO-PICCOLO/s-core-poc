@@ -1,0 +1,25 @@
+[package]
+name = "timpani-n"
+version = "0.1.0"
+edition = "2021"
+authors = ["LG Electronics"]
+license = "MIT"
+description = "Timpani-N node executor – Rust port of the C implementation"
+
+[[bin]]
+name = "timpani-n"
+path = "src/main.rs"
+
+[dependencies]
+# CLI argument parsing
+clap = { version = "4", features = ["derive"] }
+
+# Structured, async-aware logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# Ergonomic error handling
+anyhow = "1"
+
+# Derive macros for structured error types
+thiserror = "1"

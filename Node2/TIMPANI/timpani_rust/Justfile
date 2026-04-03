@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: Copyright 2026 LG Electronics Inc.
+# SPDX-License-Identifier: MIT
+#
+# Justfile for timpani_rust workspace.
+# Usage:
+#   just setup   — install git hooks (run once after cloning)
+#   just check   — run all CI checks locally
+#   just fmt     — format all code
+#   just fix     — auto-fix clippy suggestions
+#   just test    — run tests
+
+RUST_ROOT := justfile_directory()
+HOOKS_SRC := RUST_ROOT / "scripts/hooks"
+GIT_HOOKS := RUST_ROOT / "../.git/hooks"
+
+# Default: list available recipes
+default:
+    @just --list
+
+# ── One-time setup ────────────────────────────────────────────────────────────
+
+# Install git hooks into .git/hooks/
+setup:
+    @echo "Installing git hooks..."
+    @cp "{{HOOKS_SRC}}/pre-push" "{{GIT_HOOKS}}/pre-push"
+    @chmod +x "{{GIT_HOOKS}}/pre-push"
+    @echo "✅ pre-push hook installed."
+
+# ── CI checks (mirrors run-rust-ci.yml) ──────────────────────────────────────
+
+# Run all checks (same as CI pipeline)
+check: fmt clippy deny build test
+    @echo "✅ All checks passed."
+
+# Check formatting
+fmt:
+    cargo fmt --all -- --check
+
+# Run Clippy (treat warnings as errors, same as CI)
+clippy:
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+# Run cargo-deny (license, advisories, bans, sources)
+deny:
+    cargo deny check
+
+# Build the workspace
+build:
+    cargo build --workspace
+
+# Run all tests
+test:
+    cargo test --workspace
+
+# ── Developer helpers ─────────────────────────────────────────────────────────
+
+# Auto-format all code
+fmt-fix:
+    cargo fmt --all
+
+# Apply clippy auto-fixes
+fix:
+    cargo clippy --workspace --all-targets --all-features --fix --allow-staged
+
+# Run tests with output shown
+test-verbose:
+    cargo test --workspace -- --nocapture

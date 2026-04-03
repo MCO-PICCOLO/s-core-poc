@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: Copyright 2026 LG Electronics Inc.
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "test-tools"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Manual test simulators for Timpani-O — NOT for production"
+
+# ── Binaries ──────────────────────────────────────────────────────────────────
+
+[[bin]]
+# Simulates Pullpiri:
+#   • Serves FaultService on --fault-port (receives deadline-miss notifications)
+#   • Reads a workload YAML and sends AddSchedInfo to Timpani-O
+name = "pullpiri-sim"
+path = "src/bin/pullpiri_sim.rs"
+
+[[bin]]
+# Simulates one or more Timpani-N nodes concurrently:
+#   • GetSchedInfo → SyncTimer → (optional) ReportDMiss
+name = "node-sim"
+path = "src/bin/node_sim.rs"
+
+# ── Dependencies ──────────────────────────────────────────────────────────────
+
+[dependencies]
+# Re-use all proto types and service stubs from the main crate.
+# No need to recompile the protos — they are already compiled by timpani-o.
+timpani-o = { path = "../timpani-o" }
+
+tokio  = { version = "1", features = ["full"] }
+tonic  = "0.12"
+
+serde      = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+clap   = { version = "4", features = ["derive"] }
+anyhow = "1"

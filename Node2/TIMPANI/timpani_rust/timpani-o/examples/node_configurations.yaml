@@ -1,0 +1,28 @@
+# TTRT Global Scheduler - Node Configuration File
+# 각 노드의 하드웨어 사양 및 가용 리소스 정의
+
+nodes:
+  node01:
+    # 인지 및 센서 융합 노드 (4코어 시스템, CPU0 제외하고 끝쪽 3개 사용)
+    available_cpus: [2, 3]
+    max_memory_mb: 4096
+    architecture: "aarch64"
+    location: "front_sensor_unit"
+    description: "Autonomous driving perception and sensor fusion node"
+
+  node02:
+    # 차량 제어 및 안전 노드 (6코어 시스템, CPU0 제외하고 끝쪽 4개 사용)
+    available_cpus: [2, 3, 4, 5]
+    max_memory_mb: 8192
+    architecture: "aarch64"
+    location: "vehicle_control_unit"
+    description: "Motion control and safety-critical operations node"
+
+  node03:
+    # 통신 및 네비게이션 노드 (8코어 시스템, non-sequential CPU 사용)
+    available_cpus: [2, 3, 6, 7]
+    max_memory_mb: 4096
+    architecture: "x86_64"
+    location: "communication_unit"
+    description: "Communication, navigation and infotainment node"
+

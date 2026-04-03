@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: Copyright 2026 LG Electronics Inc.
+# SPDX-License-Identifier: MIT
+
+# top-most EditorConfig file
+root = true
+
+[*]
+charset = utf-8
+trim_trailing_whitespace = true
+end_of_line = lf
+insert_final_newline = true
+
+[*.{c,h,cpp,hpp}]
+indent_style = space
+indent_size = 4
+
+[external/libtrpc/*]
+indent_style = tab
+indent_size = 8
