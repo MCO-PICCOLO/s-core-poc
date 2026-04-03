@@ -11,4 +11,3 @@ dist/reports/
 etcd.log
 
 # Generated files by proto compiler
-src/common/src/generated

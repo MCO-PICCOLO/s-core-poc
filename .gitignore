@@ -74,7 +74,6 @@ MODULE.lock.bazel
 _build/
 .clwb
 .idea
-external
 compile_commands.json
 .clangd
 .cache
