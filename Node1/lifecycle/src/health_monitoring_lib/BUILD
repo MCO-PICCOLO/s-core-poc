@@ -97,7 +97,7 @@ cc_library(
     srcs = CC_SOURCES,
     hdrs = CC_HDRS,
     strip_include_prefix = "cpp/include",
-    visibility = ["//visibility:private"],
+    visibility = ["//test_hari:__pkg__"],
     deps = [
         ":health_monitoring_lib_stub_supervisor",
         "@score_baselibs//score/result",

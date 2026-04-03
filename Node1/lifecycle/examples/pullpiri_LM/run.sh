@@ -98,7 +98,7 @@ sudo cp "$SCRIPT_DIR/config/hm_config.json" /opt/pullpiri/bin/etc/hm_config.json
 sudo mkdir -p /opt/pullpiri/etc
 sudo cp "$CFG_DIR/hmproc_adas_primary.bin" /opt/pullpiri/etc/hmproc_adas_primary.bin
 
-# ---- Step 5: Launch ----
+# ---- Step 4: Launch ----
 echo ""
 echo "[5/5] Starting Launch Manager daemon..."
 echo "      Press Ctrl+C to stop."

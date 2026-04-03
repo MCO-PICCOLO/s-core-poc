@@ -17,7 +17,8 @@ mod deadline_state;
 
 pub(crate) use deadline_monitor::DeadlineEvaluationError;
 pub use deadline_monitor::{
-    DeadlineError, DeadlineHandle, DeadlineMonitor, DeadlineMonitorBuilder, DeadlineMonitorError,
+    Deadline, DeadlineError, DeadlineHandle, DeadlineMonitor, DeadlineMonitorBuilder,
+    DeadlineMonitorError,
 };
 
 // FFI bindings

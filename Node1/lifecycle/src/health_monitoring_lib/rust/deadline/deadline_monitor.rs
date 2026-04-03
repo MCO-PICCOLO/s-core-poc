@@ -132,6 +132,16 @@ impl Drop for DeadlineHandle<'_> {
 }
 
 impl Deadline {
+    /// Starts a deadline cycle without returning a scoped guard handle.
+    pub fn start_cycle(&mut self) -> Result<(), DeadlineError> {
+        unsafe { self.start_internal() }
+    }
+
+    /// Stops a previously started deadline cycle.
+    pub fn stop_cycle(&mut self) {
+        self.stop_internal();
+    }
+
     ///
     /// Starts the deadline - it will be monitored by health monitoring system.
     ///
