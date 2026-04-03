@@ -38,8 +38,6 @@
                     "PROCESSIDENTIFIER": "nodeagent"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
                 }
             }
         },
@@ -66,8 +64,6 @@
                     "PROCESSIDENTIFIER": "timpani-n"
                 },
                 "sandbox": {
-                    "uid": 0,
-                    "gid": 0
                 }
             }
         }

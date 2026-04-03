@@ -204,7 +204,7 @@ async fn load_model_with_resources(
     model_info: &common::spec::artifact::package::ModelInfo,
 ) -> common::Result<Model> {
     let model_str = common::persistency::get(&format!("{}/{}", KIND_MODEL, model_info.get_name())).await?;
-    let model: Model = serde_yaml::from_str(&model_str)?;
+    let mut model: Model = serde_yaml::from_str(&model_str)?;
 
     // Load volume if specified
     if let Some(volume_name) = model_info.get_resources().get_volume() {
