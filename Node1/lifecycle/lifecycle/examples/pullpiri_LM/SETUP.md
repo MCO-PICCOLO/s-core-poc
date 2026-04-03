@@ -74,10 +74,13 @@ cd ../../player/actioncontroller/
 cargo build --release
 cd ../filtergateway
 cargo build --release
-cd ../statemanager
+cd ../statemanager/src/grpc/receiver/
+#### modify timpani.rs with string value "RESCHEDULE_YAML_PATH" with ABSOLUTE PATH LIKE "/home/lgesdv/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/reschedule_sea.yaml"
+### Also modify the reschedule_sea.yaml node value Node2(Timpani-n running) hostname
+cd ../../../
 cargo build --release
 
-cd ../
+cd ../../
 
 sudo cp target/release/persistency-service /opt/pullpiri/bin/
 sudo cp target/release/apiserver            /opt/pullpiri/bin/
@@ -129,7 +132,7 @@ building `adas_primary`.
 ### 4a. Build the `.so` targets manually
 
 ```bash
-cd /home/acrn/new_ak/vso_score/lifecycle/lifecycle
+cd ~/s-core-poc/Node1/lifecycle/lifecycle
 
 bazel build --config=x86_64-linux \
   //src/launch_manager_daemon/common:all \
@@ -178,10 +181,28 @@ ls -lh ~/s-core-poc/Node1/feo/examples/rust/mini-adas/lib/
 ## 5. Build & Run
 
 From the lifecycle repo root (`lifecycle/lifecycle/`):
+#### clear the db files 
+cd  /opt/pullpiri/bin
+sudo rm -rf kvs*
+
+###### create /etc/piccolo/settings.yaml
+#### update Node1 ip in the below settings
+host:
+  name: HPC
+  ip: 10.221.40.153
+  type: vehicle
+  role: master
+dds:
+  idl_path: src/vehicle/dds/idl
+  domain_id: 100
+
+#### update pullpiri_lm_config.json file in the path "/home/lgesdv/demo_vso/s-core-poc/Node1/lifecycle/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json"
+### update the timpani-o node config value to reflect the absolute path of the Node1 path for eg as below:
+"/home/lgesdv/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/timpani/node_configurations.yaml"
 
 ```bash
-cd examples/pullpiri_LM
-sudo ./run.sh
+cd ~/s-core-poc/Node1/lifecycle/lifecycle/examples/pullpiri_LM
+sudo -E ./run.sh
 ```
 
 `run.sh` does the following automatically:
