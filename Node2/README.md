@@ -13,6 +13,7 @@ This script (`run.sh`) automates the build and launch process for the S-CORE Lif
 
 ## Usage
 ```sh
+### based on user config use root , if not root also it works
 sudo ./run.sh
 ```
 - Run the script from the `pullpiri_LM` directory.
@@ -64,15 +65,29 @@ sudo chmod +x /opt/pullpiri/bin/timpani-n
 #sudo chmod +x /opt/pullpiri/bin/timpani-n
 
 ## What Happens Next?
-After running this script, to continue the workflow:
-1. Change directory to `~/s-core-poc/Node2/examples`:
+Run the workflow in this order:
+1. Build `sea_app` and its Podman image:
    ```sh
-   cd ~/s-core-poc/Node2/examples/
+   cd ~/s-core-poc/Node2/sea_app
+   cargo build --release
+   podman build -t sdv.lge.com/demo/sea_app:1.0 .
    ```
-2. Run the following command:
+2. Run the Lifecycle Launch Manager script:
    ```sh
-   bash timpani.sh
+   cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
+   sudo ./run.sh
    ```
+3. Move to the examples directory:
+   ```sh
+   cd ~/s-core-poc/Node2/examples
+   ```
+4. Run Timpani workflow:
+  ### replace the node name in reschedule_sea.yaml found in Node1 path ~/s-core-poc/Node1/pullpiri/examples/resources/reschedule_sea.yaml, put the Node2's hostname   
+   ```sh
+   cd resources
+     ### replace the node name in safe-exit-assist.yaml, put the Node2's hostname   
 
+   ### replace ip of curlcommand with Node1 IP
+   bash timpani.sh
 ---
 **Note:** The script will stop and report errors if any step fails (due to `set -e`).
