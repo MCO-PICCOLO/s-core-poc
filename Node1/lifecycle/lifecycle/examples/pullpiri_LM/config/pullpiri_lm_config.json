@@ -37,6 +37,8 @@
                     "PROCESSIDENTIFIER": "persistency_service"
                 },
                 "sandbox": {
+                    "uid": 0,
+                    "gid": 0
                 }
             }
         },
@@ -52,7 +54,8 @@
                     "PROCESSIDENTIFIER": "apiserver"
                 },
                 "sandbox": {
-                
+                    "uid": 0,
+                    "gid": 0
                 }
             }
         },
@@ -68,7 +71,8 @@
                     "PROCESSIDENTIFIER": "monitoringserver"
                 },
                 "sandbox": {
-                
+                    "uid": 0,
+                    "gid": 0
                 }
             }
         },
@@ -84,7 +88,9 @@
                     "PROCESSIDENTIFIER": "statemanager"
                 },
                 "sandbox": {
-                    }
+                    "uid": 0,
+                    "gid": 0
+                }
             }
         },
         "filtergateway": {
@@ -99,7 +105,8 @@
                     "PROCESSIDENTIFIER": "filtergateway"
                 },
                 "sandbox": {
-                    
+                    "uid": 0,
+                    "gid": 0
                 }
             }
         },
@@ -115,7 +122,8 @@
                     "PROCESSIDENTIFIER": "actioncontroller"
                 },
                 "sandbox": {
-                    
+                    "uid": 0,
+                    "gid": 0
                 }
             }
         },
@@ -129,7 +137,8 @@
                     "PROCESSIDENTIFIER": "policymanager"
                 },
                 "sandbox": {
-                    
+                    "uid": 0,
+                    "gid": 0
                 }
             }
         },
@@ -145,7 +154,7 @@
                     "-d",
                     "7777",
                     "--node-config",
-                    "~/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/timpani/node_configurations.yaml"
+                    "/home/lgesdv/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/timpani/node_configurations.yaml"
                 ],
                 "depends_on": []
             },
@@ -154,7 +163,8 @@
                     "PROCESSIDENTIFIER": "timpani-o"
                 },
                 "sandbox": {
-                    
+                    "uid": 0,
+                    "gid": 0
                 }
             }
         },
@@ -171,7 +181,8 @@
                     "PROCESSIDENTIFIER": "nodeagent"
                 },
                 "sandbox": {
-                    
+                    "uid": 0,
+                    "gid": 0
                 }
             }
         },
@@ -200,7 +211,8 @@
                     "PROCESSIDENTIFIER": "timpani-n"
                 },
                 "sandbox": {
-                    
+                    "uid": 0,
+                    "gid": 0
                 }
             }
         },
