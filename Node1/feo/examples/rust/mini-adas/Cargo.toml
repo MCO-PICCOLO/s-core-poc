@@ -28,8 +28,8 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 stdout_logger = { workspace = true }
 tracing = { workspace = true }
-health_monitoring_lib = { path = "../../../../lifecycle/lifecycle/src/health_monitoring_lib", optional = true }
-lifecycle_client_rs = { path = "../../../../lifecycle/lifecycle/src/launch_manager_daemon/lifecycle_client_lib/rust_bindings", optional = true }
+health_monitoring_lib = { path = "../../../../lifecycle/src/health_monitoring_lib", optional = true }
+lifecycle_client_rs = { path = "../../../../lifecycle/src/launch_manager_daemon/lifecycle_client_lib/rust_bindings", optional = true }
 signal-hook = { version = "0.3", optional = true }
 libc = { workspace = true }
 
