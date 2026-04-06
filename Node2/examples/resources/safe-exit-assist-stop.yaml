@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: Copyright 2026 LG Electronics Inc.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Safe Exit Assist (SEA) — Pullpiri Deployment Manifest
+#
+# Combined manifest: Scenario + Package + Model + Timpani-N Schedule
+#
+# Deploy with:
+#   curl -X POST 'http://<piccolo-host>:47099/api/artifact' \
+#        --header 'Content-Type: text/plain' \
+#        --data-binary @safe-exit-assist.yaml
+#
+# Build the container image first:
+#   cargo build --release
+#   docker build -t sdv.lge.com/demo/sea_app:1.0 .
+#   docker push sdv.lge.com/demo/sea_app:1.0
+
+---
+# ── Scenario ─────────────────────────────────────────────────────────────────
+# Trigger: launch SEA when the vehicle gear shifts to Park (gear == 0)
+apiVersion: v1
+kind: Scenario
+metadata:
+  name: safe-exit-assist
+spec:
+  condition: null
+  action: terminate
+  target: safe-exit-assist
+
+---
+# ── Package ──────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Package
+metadata:
+  label: null
+  name: safe-exit-assist
+spec:
+  schedule: sea-schedule
+  pattern:
+    - type: plain
+  models:
+    - name: sea-app
+      node: lg-NUC11TNHi5
+      resources:
+        volume:
+        network:
+
+---
+# ── Model (Container) ────────────────────────────────────────────────────────
+# NOTE: update 'image' once the container is built and pushed to the registry.
+apiVersion: v1
+kind: Model
+metadata:
+  name: sea-app
+  annotations:
+    io.piccolo.annotations.package-type: safe-exit-assist
+    io.piccolo.annotations.package-name: safe-exit-assist
+    io.piccolo.annotations.package-network: default
+  labels:
+    app: sea-app
+spec:
+  hostNetwork: true
+  containers:
+    - name: sea-app
+      # TODO: replace with actual registry path once the image is pushed
+      image: sdv.lge.com/demo/sea_app:1.0
+  terminationGracePeriodSeconds: 0
+  restartPolicy: Never
+
+---

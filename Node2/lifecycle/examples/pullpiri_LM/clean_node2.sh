@@ -91,10 +91,11 @@ clean_nodeagent_builds() {
     SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     PULLPIRI_DIR="$( cd "$SCRIPT_DIR/../../../pullpiri" && pwd 2>/dev/null || echo "" )"
 
-    if [ -n "$PULLPIRI_DIR" ] && [ -d "$PULLPIRI_DIR/src/target" ]; then
+    NODEAGENT_TARGET="$PULLPIRI_DIR/src/agent/nodeagent/target"
+    if [ -n "$PULLPIRI_DIR" ] && [ -d "$NODEAGENT_TARGET" ]; then
         log_info "Removing NodeAgent build artifacts..."
-        rm -rf "$PULLPIRI_DIR/src/target"
-        log_success "Removed $PULLPIRI_DIR/src/target"
+        rm -rf "$NODEAGENT_TARGET"
+        log_success "Removed $NODEAGENT_TARGET"
     else
         log_warning "NodeAgent build artifacts not found"
     fi

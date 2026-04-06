@@ -1,0 +1,98 @@
+# SPDX-FileCopyrightText: Copyright 2026 LG Electronics Inc.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Safe Exit Assist (SEA) — Pullpiri Deployment Manifest
+#
+# Combined manifest: Scenario + Package + Model + Timpani-N Schedule
+#
+# Deploy with:
+#   curl -X POST 'http://<piccolo-host>:47099/api/artifact' \
+#        --header 'Content-Type: text/plain' \
+#        --data-binary @safe-exit-assist.yaml
+#
+# Build the container image first:
+#   cargo build --release
+#   docker build -t sdv.lge.com/demo/sea_app:1.0 .
+#   docker push sdv.lge.com/demo/sea_app:1.0
+
+---
+# ── Scenario ─────────────────────────────────────────────────────────────────
+# Trigger: launch SEA when the vehicle gear shifts to Park (gear == 0)
+apiVersion: v1
+kind: Scenario
+metadata:
+  name: safe-exit-assist2
+spec:
+  condition: null
+  action: launch
+  target: safe-exit-assist2
+
+---
+# ── Package ──────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Package
+metadata:
+  label: null
+  name: safe-exit-assist2
+spec:
+  schedule: sea-schedule
+  pattern:
+    - type: plain
+  models:
+    - name: sea-app2
+      node: lg-NUC11TNHi5
+      resources:
+        volume:
+        network:
+
+---
+# ── Model (Container) ────────────────────────────────────────────────────────
+# NOTE: update 'image' once the container is built and pushed to the registry.
+apiVersion: v1
+kind: Model
+metadata:
+  name: sea-app2
+  annotations:
+    io.piccolo.annotations.package-type: safe-exit-assist2
+    io.piccolo.annotations.package-name: safe-exit-assist2
+    io.piccolo.annotations.package-network: default
+  labels:
+    app: sea-app2
+spec:
+  hostNetwork: true
+  containers:
+    - name: sea-app
+      # TODO: replace with actual registry path once the image is pushed
+      image: sdv.lge.com/demo/sea_app:1.0
+  terminationGracePeriodSeconds: 0
+  restartPolicy: Never
+
+---
+# ── Timpani-N Schedule ───────────────────────────────────────────────────────
+# Real-time scheduling parameters for the sea_app process.
+#
+# IMPORTANT — period/runtime values below are initial estimates.
+# Before finalising these values:
+#   1. Run the app in timer mode:   ./sea_app --timer --period-ms 200
+#   2. Observe [PERF] Loop Latency output over several cycles
+#   3. Set 'runtime' to approximately 2× the measured average latency
+#   4. Set 'period' and 'deadline' based on required response time
+#
+# Measured average latency: ~80 ms  →  runtime = 2 × 80 ms = 160 ms
+# Period set to 200 ms (5 Hz) to give adequate headroom over runtime.
+#
+apiVersion: v1
+kind: Schedule
+metadata:
+  name: sea-schedule
+spec:
+  - name: sea_app2
+    priority: 50
+    policy: FIFO
+    cpu_affinity: 4   # all CPUs — pin to a specific CPU if needed
+    period: 10000            # 10 ms in microseconds (100 Hz)
+    release_time: 0
+    runtime: 1000           # 1 ms = 2× measured 0.5 ms average latency
+    deadline: 10000           # deadline == period
+    node_id: perf_node
+    max_dmiss: 10
