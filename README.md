@@ -59,7 +59,7 @@ s-core-poc/
 
 To build and run the S-CORE Lifecycle Launch Manager with Pullpiri components, follow the instructions in the Node1 run script:
 
-- **[Node1 Setup Instructions →](Node1/DEMO_README.md)**
+- **[Node1 Setup Instructions →](Node1/README.md)**
 
 This script will:
 - Build the required S-CORE and Pullpiri binaries using Bazel and Cargo
