@@ -66,9 +66,15 @@ copy_lib() {
     local src="$1"
     local filename
     filename="$(basename "$src")"
+    local dest="$MINI_ADAS_LIB/$filename"
+
+    # Remove destination if it exists but is not writable (e.g. root-owned from a prior run)
+    if [[ -f "$dest" ]] && [[ ! -w "$dest" ]]; then
+        sudo rm -f "$dest"
+    fi
 
     if [[ -f "$src" ]]; then
-        cp -v "$src" "$MINI_ADAS_LIB/"
+        cp -v "$src" "$dest"
     else
         # bazel-bin may be root-owned; use sudo find if available
         local found
@@ -79,7 +85,7 @@ copy_lib() {
         fi
 
         if [[ -n "$found" ]]; then
-            cp -v "$found" "$MINI_ADAS_LIB/"
+            cp -v "$found" "$dest"
         else
             echo "ERROR: $filename not found anywhere under $BAZEL_BIN"
             echo "       Run 'sudo find $BAZEL_BIN -name $filename' to investigate."

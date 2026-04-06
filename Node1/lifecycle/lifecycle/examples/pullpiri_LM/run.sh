@@ -53,6 +53,14 @@ bazel build --config=x86_64-linux //examples/pullpiri_LM:pullpiri_config //src/l
 echo ""
 echo "[1.5/5] Building mini-adas (adas_primary + adas_secondary) with lifecycle feature..."
 cd "$MINI_ADAS_DIR/examples/rust/mini-adas"
+
+cargo clean
+# Back up the header first!
+sudo cp /usr/include/linux/stddef.h /usr/include/linux/stddef.h.bak
+ 
+# Change 'long' to 'unsigned long' to match Clang's expectation
+sudo sed -i 's/typedef long size_t;/typedef unsigned long size_t;/g' /usr/include/linux/stddef.h
+
 LIBRARY_PATH="$MINI_ADAS_LIB" cargo build --release \
     --bin adas_primary --bin adas_secondary \
     --features "signalling_relayed_tcp,lifecycle" 2>&1 | grep -v "^warning"

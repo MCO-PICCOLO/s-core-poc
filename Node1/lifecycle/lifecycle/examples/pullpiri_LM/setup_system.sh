@@ -93,6 +93,13 @@ install_prerequisites() {
         MISSING_DEPS+=("libsystemd-dev")
     fi
 
+    if ! dpkg -l | grep -q "^ii  cmake "; then
+        MISSING_DEPS+=("cmake")
+    fi
+    if ! dpkg -l | grep -q "^ii  build-essential "; then
+        MISSING_DEPS+=("build-essential")
+    fi
+
     if [ ${#MISSING_DEPS[@]} -eq 0 ]; then
         log_success "All Timpani dependencies already installed"
     else
@@ -231,7 +238,7 @@ build_pullpiri_binaries() {
         if [ -f "$TARGET_DIR/$binary" ]; then
             cp -f "$TARGET_DIR/$binary" /opt/pullpiri/bin/
             log_success "Copied $binary"
-            ((COPIED_COUNT++))
+            COPIED_COUNT=$((COPIED_COUNT + 1))
         else
             log_warning "Binary not found: $TARGET_DIR/$binary"
         fi
@@ -264,13 +271,18 @@ build_timpani_binaries() {
 
     log_info "Found timpani-o at: $TIMPANI_DIR"
 
-    # Create build directory if it doesn't exist
-    if [ ! -d "$TIMPANI_DIR/build" ]; then
-        mkdir -p "$TIMPANI_DIR/build"
+    # Clean previous build if it exists
+    if [ -d "$TIMPANI_DIR/build" ]; then
+        log_info "Cleaning previous build directory..."
+        rm -rf "$TIMPANI_DIR/build"
+        log_success "Build directory cleaned"
     fi
 
+    # Create build directory as actual user if it doesn't exist
+    su - $ACTUAL_USER -c "mkdir -p '$TIMPANI_DIR/build'"
+
     log_info "Running cmake..."
-    su - $ACTUAL_USER -c "cd '$TIMPANI_DIR/build' && cmake .."
+    su - $ACTUAL_USER -c "cd '$TIMPANI_DIR/build' && cmake -DCMAKE_C_FLAGS='-include stddef.h' .."
 
     log_info "Building timpani-o..."
     su - $ACTUAL_USER -c "cd '$TIMPANI_DIR/build' && make"
