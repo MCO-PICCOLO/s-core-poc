@@ -118,7 +118,7 @@ Run the workflow in this order:
    ```sh
    cd ~/s-core-poc/Node2/sea_app
    cargo build --release
-   podman build -t sdv.lge.com/demo/sea_app:1.0 .
+   sudo podman build -t sdv.lge.com/demo/sea_app:1.0 .
    ```
 2. Run the Lifecycle Launch Manager script:
    ```sh
