@@ -47,6 +47,31 @@ nodeagent:
   grpc_port: 47004
   log_level: "info"
 
+
+#### update pullpiri_lm_config.json file in the path "/home/lge/s-core-poc/Node2/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json"
+### update the timpani-n Ip config value to reflect the IP of Node1 for eg as below:
+
+```bash
+ "timpani-n": {
+            "component_properties": {
+                "binary_name": "timpani-n",
+                "process_arguments": [
+                    "-n",
+                    "perf_node",
+                    "-c",
+                    "1",
+                    "-P",
+                    "85",
+                    "-p",
+                    "7777",
+                    "-l",
+                    "4",
+                    "10.221.40.153"
+                ],
+                "depends_on": []
+            },
+```
+
 # Node2: Building and Running nodeagent with Lifecycle Launch manager
 
 Node2 is responsible for building the Pullpiri `nodeagent` binary (note: the binary is around 100MB and cannot be uploaded to GitHub, so it must be built locally on Node2) and running the integration using its own run script.
