@@ -73,6 +73,12 @@ sudo ./setup_system.sh
 chmod +x build_adas_libs.sh
 ./build_adas_libs.sh
 ```
+
+ ### step - modify timpani.rs with string value "RESCHEDULE_YAML_PATH" with ABSOLUTE PATH LIKE "/home/lgesdv/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/reschedule_sea.yaml"
+### Also modify the reschedule_sea.yaml node value Node2(Timpani-n running) hostname
+#### update pullpiri_lm_config.json file in the path "/home/lgesdv/demo_vso/s-core-poc/Node1/lifecycle/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json"
+### update the timpani-o node config value to reflect the absolute path of the Node1 path for eg as below:
+"/home/lgesdv/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/timpani/node_configurations.yaml"
  
 ### Step 4 — Start the Lifecycle Launch Manager (Node 1)
 
@@ -104,228 +110,21 @@ All 10+ processes are now running under Lifecycle supervision.
 
 ---
 
-## Node 2 — Worker Setup & Launch
-
-### Step 1 — Check and Clean the Container
-
-Before starting, make sure no stale `sea-app` container is running:
+ Verifying the Setup
 
 ```bash
-sudo podman ps -a
-```
+# All required binaries present
+ls /opt/pullpiri/bin/{persistency-service,apiserver,monitoringserver,statemanager,\
+filtergateway,actioncontroller,policymanager,nodeagent,timpani-o,timpani-n,\
+adas_primary,adas_secondary
 
-If `sea-app` appears in the list:
+# Shared libraries present
+ls /opt/pullpiri/lib/lib*.so
 
-```bash
-sudo podman rm -f sea-app
-```
-
-### Step 2 — Configure NodeAgent with Correct IPs
-
-Edit `/etc/piccolo/nodeagent.yaml` to point to Node 1 as the master
-and set this node's own IP:
-
-```bash
-sudo nano /etc/piccolo/nodeagent.yaml
-```
-
-Set these fields:
-
-```yaml
-nodeagent:
-  node_name: "acrn-NUC11TNHi5"
-  node_type: "vehicle"
-  node_role: "nodeagent"
-  master_ip: "10.221.40.35"   --> Node 1 IP
-  node_ip: "10.221.40.33"     --> Node2 IP
-  grpc_port: 47004
-  log_level: "info"
-  metrics:
-    collection_interval: 5
-    batch_size: 50
-  system:
-    hostname: "acrn-NUC11TNHi5"
-    platform: "Linux"
-    architecture: "x86_64"
+# Config files present
+ls /opt/pullpiri/bin/etc/hm_config.json
+ls /opt/pullpiri/etc/hmproc_adas_primary.bin
+ls lifecycle/lifecycle/etc/{lm_demo.bin,hm_demo.bin,hmcore.bin,logging.json}
 ```
 
 
-### Step 3 — Start Lifecycle on Node 2 (nodeagent + timpani-n)
-
-### first follow Node2/Readme.md to generate the nodeagent and timpani-n Binaries
-```bash
-cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
-sudo -E ./run.sh
-```
-
-> On Node 2 this starts only `nodeagent` and `timpani-n` (configure the
-> `pullpiri_lm_config.json` on Node 2 to include only those two components,
-> or start them manually — see note below).
-
-### Step 4 — Modify and Send the Workload Manifest
-
-The workload manifest is at: modify the IP of Node 1
-
-```
-~/s-core-poc/Node2/examples/timpani.sh
-```
-
-Open it and verify the API server URL points to **Node 1**:
-
-```bash
-cat ~/s-core-poc/Node2/examples/timpani.sh
-```
-
-It should read:
-
-```bash
-curl -X POST 'http://<NODE1_IP>:47099/api/artifact' \
---header 'Content-Type: text/plain' \
---data "${BODY}"
-```
-
-Update the IP if needed:
-
-```bash
-sed -i 's|http://[0-9.]*:47099|http://<NODE1_IP>:47099|g' \
-  ~/s-core-poc/Node2//examples/timpani.sh
-```
-
-Then apply the workload:
-
-```bash
-cd ~/s-core-poc/Node2/examples
-bash timpani.sh
-```
-
-### Step 5— Verify the Container is Running on Node 2
-
-On **Node 2**, confirm `sea-app` has been deployed:
-
-```bash
-podman ps -a
-```
-
-Expected output:
-
-```
-CONTAINER ID  IMAGE                          COMMAND   CREATED   STATUS    NAMES
-<id>          sdv.lge.com/demo/sea_app:1.0  ...       ...       Up ...    sea-app
-```
-
-The `sea-app` container is now running, pinned to **1 CPU** (as defined by the
-initial `cpu_affinity` in the schedule).
-
----
-
-## Triggering a Deadline Miss — CPU Stress
-
-### Step 6 — Run the CPU Stress Tool on Node 2
-
-With `sea-app` running, saturate its assigned CPUs to force deadline misses:
-
-```bash
-cd ~/s-core-poc/Node2/TIMPANI/timpani-n/tools
-sudo chrt -f 51 ./stress_app_cpus.sh sea_app 60 98
-```
-
-| Argument | Value | Meaning |
-|---|---|---|
-| `sea_app` | app name | process to stress (matches `/proc/<pid>/comm`) |
-| `60` | duration | stress for 60 seconds |
-| `98` | load % | 98% CPU load on the assigned core(s) |
-
-This saturates the CPU core that `sea_app` is pinned to, causing it to miss
-its real-time deadline.
-
-### What to Expect
-
-On **Node 1** (Launch Manager terminal), `timpani-n` reports deadline misses
-back to `timpani-o`:
-
-```
-[timpani-n] DEADLINE MISS detected for task sea_app (node: sea_node)
-[timpani-o] Received deadline miss report from sea_node
-```
-
-Pullpiri's `actioncontroller` detects this through the `statemanager` and
-automatically generates a `reschedule` action.
-
----
-
-## Automatic Schedule Update — Recovery
-
-### Step 7 — Observe the Automatic Reschedule
-
-Pullpiri sends an updated `Schedule` to `timpani-o` **before** restarting the
-container, expanding the CPU affinity from 1 to 2 cores:
-
-**Before (initial schedule):**
-
-```yaml
-- name: sea_app
-  cpu_affinity: 2   # first CPU is assigned
-  period: 200000
-  runtime: 160000
-```
-
-**After (auto-rescheduled):**
-
-```yaml
-- name: sea_app
-  cpu_affinity: 4   # 2 CPU is assigned
-  period: 200000
-  runtime: 160000
-```
-
-On **Node 2**, verify the container restarted with the new CPU assignment:
-
-```bash
-# Check the container restarted
-sudo podman ps -a
-
-# Check CPU affinity of the sea_app process
-PID=$(pidof sea_app)
-taskset -cp $PID
-```
-
-The `sea_app` process should now be schedulable on 2nd CPU instead of 1st cpu,
-resolving the deadline misses.
-
-On **Node 1** (Launch Manager / timpani-o terminal):
-
-```
-[actioncontroller] reschedule action triggered for sea-exit-assist
-[timpani-o] Schedule updated for sea_node
-[actioncontroller] container sea-app restarted with new schedule
-```
-
-## Troubleshooting
-
-| Symptom | Likely Cause | Fix |
-|---|---|---|
-| `sea-app` not deployed on Node 2 | `nodeagent` not connected to master | Check `master_ip` in `/etc/piccolo/nodeagent.yaml` |
-| `timpani-n` not connecting | Wrong IP passed to `-a` flag | Use Node 1 IP: `-a <NODE1_IP>` |
-| API curl returns connection refused | Pullpiri not fully started | Wait for `actioncontroller` init log on Node 1, then retry |
-| No deadline miss detected | Stress tool running on wrong PID | Confirm `sea_app` is running: `pidof sea_app` |
-| Container not rescheduled to 2 CPUs | `actioncontroller` reschedule fix not built | Rebuild: `cargo build -p actioncontroller` and restart Node 1 |
-| LM kills `adas_primary` immediately | `.so` libs missing from `/opt/pullpiri/lib/` | Run `build_adas_libs.sh` and copy `.so` files to `/opt/pullpiri/lib/` |
-
----
-
-## Reference: Key File Locations
-
-| File / Binary | Path |
-|---|---|
-| Launch Manager run script | `lifecycle/lifecycle/examples/pullpiri_LM/run.sh` |
-| LM config | `lifecycle/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json` |
-| Workload apply script | `pullpiri/examples/timpani.sh` |
-| Workload manifest (timpani) | `pullpiri/examples/resources/timpani-test.yaml` |
-| sea-app manifest | `new_timpani/sea_app/safe-exit-assist.yaml` |
-| Node configuration (timpani-o) | `pullpiri/examples/resources/timpani/node_configurations.yaml` |
-| NodeAgent config | `/etc/piccolo/nodeagent.yaml` |
-| Piccolo settings | `/etc/piccolo/settings.yaml` |
-| Stress tool | `TIMPANI/timpani-n/tools/stress_app_cpus.sh` |
-| adas_primary `.so` libs | `feo/examples/rust/mini-adas/lib/` |
-| All Pullpiri binaries | `/opt/pullpiri/bin/` |
-| Shared `.so` (runtime) | `/opt/pullpiri/lib/` |
