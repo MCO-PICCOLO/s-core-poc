@@ -134,19 +134,18 @@ clean_sea_app() {
     SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     SEA_APP_DIR="$( cd "$SCRIPT_DIR/../../../sea_app" && pwd 2>/dev/null || echo "" )"
 
-    # Remove container images (both possible tags) - run as the actual user
+    # Remove container images (both possible tags) - run with sudo
     if command -v podman &> /dev/null; then
-        # Check for containers in actual user's context (containers are built by the user, not root)
-        if su - $ACTUAL_USER -c "podman images | grep -q 'sdv.lge.com/demo/sea_app'" 2>/dev/null; then
-            log_info "Removing sea-app container image (sdv.lge.com/demo/sea_app:1.0) from user $ACTUAL_USER's podman..."
-            su - $ACTUAL_USER -c "podman rmi sdv.lge.com/demo/sea_app:1.0" 2>/dev/null || true
+        if sudo podman images | grep -q 'sdv.lge.com/demo/sea_app' 2>/dev/null; then
+            log_info "Removing sea-app container image (sdv.lge.com/demo/sea_app:1.0)..."
+            sudo podman rmi sdv.lge.com/demo/sea_app:1.0 2>/dev/null || true
             log_success "Removed sea-app container image"
-        elif su - $ACTUAL_USER -c "podman images | grep -q 'localhost/sea-app'" 2>/dev/null; then
-            log_info "Removing sea-app container image (localhost/sea-app:latest) from user $ACTUAL_USER's podman..."
-            su - $ACTUAL_USER -c "podman rmi localhost/sea-app:latest" 2>/dev/null || true
+        elif sudo podman images | grep -q 'localhost/sea-app' 2>/dev/null; then
+            log_info "Removing sea-app container image (localhost/sea-app:latest)..."
+            sudo podman rmi localhost/sea-app:latest 2>/dev/null || true
             log_success "Removed localhost/sea-app container image"
         else
-            log_warning "No sea-app container images found for user $ACTUAL_USER (already clean)"
+            log_warning "No sea-app container images found (already clean)"
         fi
     fi
 

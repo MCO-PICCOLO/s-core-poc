@@ -312,7 +312,7 @@ build_sea_app() {
 
     # Build Podman container image
     log_info "Building Podman container image..."
-    su - $ACTUAL_USER -c "cd '$SEA_APP_DIR' && podman build -t sdv.lge.com/demo/sea_app:1.0 ."
+    sudo podman build -t sdv.lge.com/demo/sea_app:1.0 "$SEA_APP_DIR"
 
     if [ $? -eq 0 ]; then
         log_success "sea-app container image built: sdv.lge.com/demo/sea_app:1.0"
@@ -393,7 +393,7 @@ main() {
 
     echo ""
     log_info "Verifying container images:"
-    su - $ACTUAL_USER -c "podman images | grep sea_app" || log_warning "sea-app image not found"
+    sudo podman images | grep sea_app || log_warning "sea-app image not found"
 
     echo ""
     log_info "Next steps:"

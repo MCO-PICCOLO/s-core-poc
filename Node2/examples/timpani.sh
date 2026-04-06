@@ -6,8 +6,8 @@
 #BODY=$(< ./resources/timpani-test.yaml)
 #BODY=$(< ./resources/timpani-test-1proc.yaml)
 #BODY=$(< ./resources/timpani-test-1proc-nomiss.yaml)
-#BODY=$(< ./resources/safe-exit-assist.yaml)
-BODY=$(< ./resources/safe-exit-assist2.yaml)
+BODY=$(< ./resources/safe-exit-assist.yaml)
+#BODY=$(< ./resources/safe-exit-assist2.yaml)
 #BODY=$(< ./resources/safe-exit-assist-stop.yaml)
 #URL="10.0.0.30:8080/api/v1/yaml"
 
