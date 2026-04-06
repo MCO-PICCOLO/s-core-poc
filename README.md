@@ -80,6 +80,27 @@ For more details and system setup, see the Node2 README.
 
 ---
 
+## Reference: Key File Locations
+
+| File / Binary | Path |
+|---|---|
+| Launch Manager run script (Node1) | `Node1/lifecycle/lifecycle/examples/pullpiri_LM/run.sh` |
+| Launch Manager run script (Node2) | `Node2/lifecycle/examples/pullpiri_LM/run.sh` |
+| LM config (Node1) | `Node1/lifecycle/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json` |
+| LM config (Node2) | `Node2/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json` |
+| Workload apply script | `Node2/examples/timpani.sh` |
+| Workload manifest (timpani) | `Node1/pullpiri/examples/resources/timpani-test.yaml` |
+| sea-app manifest | `Node2/examples/resources/safe-exit-assist.yaml` |
+| Node configuration (timpani-o) | `Node1/pullpiri/examples/resources/timpani/node_configurations.yaml` |
+| NodeAgent config | `/etc/piccolo/nodeagent.yaml` (Node2) |
+| Piccolo settings | `/etc/piccolo/settings.yaml` (Node1) |
+| Stress tool | `Node2/TIMPANI/timpani-n/tools/stress_app_cpus.sh` |
+| adas_primary `.so` libs | `Node1/feo/examples/rust/mini-adas/lib/` |
+| All Pullpiri binaries | `/opt/pullpiri/bin/` (Both nodes) |
+| Shared `.so` (runtime) | `/opt/pullpiri/lib/` (Both nodes) |
+
+---
+
 ## Additional Notes
 
 - Ensure all prerequisites (Bazel, Rust, Java, sudo access) are met as described in the respective READMEs.

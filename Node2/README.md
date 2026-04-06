@@ -505,19 +505,3 @@ taskset -c -p $(pgrep -x sea_app)
 
 ---
 
-## Reference: Key File Locations
-
-| File / Binary | Path |
-|---|---|
-| Launch Manager run script | `lifecycle/lifecycle/examples/pullpiri_LM/run.sh` |
-| LM config | `lifecycle/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json` |
-| Workload apply script | `pullpiri/examples/timpani.sh` |
-| Workload manifest (timpani) | `pullpiri/examples/resources/timpani-test.yaml` |
-| sea-app manifest | `new_timpani/sea_app/safe-exit-assist.yaml` |
-| Node configuration (timpani-o) | `pullpiri/examples/resources/timpani/node_configurations.yaml` |
-| NodeAgent config | `/etc/piccolo/nodeagent.yaml` |
-| Piccolo settings | `/etc/piccolo/settings.yaml` |
-| Stress tool | `TIMPANI/timpani-n/tools/stress_app_cpus.sh` |
-| adas_primary `.so` libs | `feo/examples/rust/mini-adas/lib/` |
-| All Pullpiri binaries | `/opt/pullpiri/bin/` |
-| Shared `.so` (runtime) | `/opt/pullpiri/lib/` |
