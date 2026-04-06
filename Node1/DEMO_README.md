@@ -127,4 +127,4 @@ ls /opt/pullpiri/etc/hmproc_adas_primary.bin
 ls lifecycle/lifecycle/etc/{lm_demo.bin,hm_demo.bin,hmcore.bin,logging.json}
 ```
 
-
+For any issue please try mannual way https://github.com/MCO-PICCOLO/s-core-poc/blob/main/Node1/lifecycle/lifecycle/examples/pullpiri_LM/SETUP.md
