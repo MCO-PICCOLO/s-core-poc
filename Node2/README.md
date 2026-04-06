@@ -24,7 +24,7 @@ The `run.sh` script automates the build and launch process for the S-CORE Lifecy
 
 Before starting, ensure you have:
 
-- **Ubuntu 22.04 LTS** (Ubuntu 24.04 requires different setup)
+- **Ubuntu 22.04+ LTS**
 - **sudo access**
 - **Network connectivity to Node 1** (Master)
 - **Git repository cloned:** `s-core-poc/`
@@ -78,13 +78,20 @@ sudo mkdir -p /etc/piccolo
 # Create nodeagent.yaml (replace <NODE1_IP> and <NODE2_IP> with actual IPs)
 sudo tee /etc/piccolo/nodeagent.yaml > /dev/null <<EOF
 nodeagent:
-  node_name: "$(hostname)"
+  node_name: "lge-oldnuc"
   node_type: "vehicle"
   node_role: "nodeagent"
-  master_ip: "<NODE1_IP>"
-  node_ip: "<NODE2_IP>"
+  master_ip: "192.168.10.100"
+  node_ip: "192.168.10.101"
   grpc_port: 47004
   log_level: "info"
+  metrics:
+    collection_interval: 5
+    batch_size: 50
+  system:
+    hostname: "lge-oldnuc"
+    platform: "Linux"
+    architecture: "x86_64"
 EOF
 
 # Verify configuration
