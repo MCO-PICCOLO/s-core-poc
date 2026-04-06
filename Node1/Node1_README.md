@@ -66,6 +66,13 @@ Before each demo run, wipe any stale state from a previous session:
 cd /opt/pullpiri/bin
 sudo rm -rf kvs*
 ```
+### step - 
+ ### step - modify timpani.rs with string value "RESCHEDULE_YAML_PATH" with ABSOLUTE PATH LIKE "/home/lgesdv/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/reschedule_sea.yaml"
+### Also modify the reschedule_sea.yaml node value Node2(Timpani-n running) hostname
+#### update pullpiri_lm_config.json file in the path "/home/lgesdv/demo_vso/s-core-poc/Node1/lifecycle/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json"
+### update the timpani-o node config value to reflect the absolute path of the Node1 path for eg as below:
+"/home/lgesdv/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/timpani/node_configurations.yaml"
+
 ### Setp 3 - Binaries generation
 ```bash
 cd ~/s-core-poc/Node1/lifecycle/lifecycle/examples/pullpiri_LM
@@ -73,12 +80,6 @@ sudo ./setup_system.sh
 chmod +x build_adas_libs.sh
 ./build_adas_libs.sh
 ```
-
- ### step - modify timpani.rs with string value "RESCHEDULE_YAML_PATH" with ABSOLUTE PATH LIKE "/home/lgesdv/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/reschedule_sea.yaml"
-### Also modify the reschedule_sea.yaml node value Node2(Timpani-n running) hostname
-#### update pullpiri_lm_config.json file in the path "/home/lgesdv/demo_vso/s-core-poc/Node1/lifecycle/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json"
-### update the timpani-o node config value to reflect the absolute path of the Node1 path for eg as below:
-"/home/lgesdv/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/timpani/node_configurations.yaml"
  
 ### Step 4 — Start the Lifecycle Launch Manager (Node 1)
 
