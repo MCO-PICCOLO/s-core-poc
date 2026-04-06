@@ -131,13 +131,20 @@ Set these fields:
 
 ```yaml
 nodeagent:
-  node_name: "<NODE2_HOSTNAME>"   # hostname of Node 2 (run: hostname)
+  node_name: "acrn-NUC11TNHi5"
   node_type: "vehicle"
   node_role: "nodeagent"
-  master_ip: "<NODE1_IP>"         # ← Node 1 IP
-  node_ip:   "<NODE2_IP>"         # ← Node 2 IP
+  master_ip: "10.221.40.35"   --> Node 1 IP
+  node_ip: "10.221.40.33"     --> Node2 IP
   grpc_port: 47004
   log_level: "info"
+  metrics:
+    collection_interval: 5
+    batch_size: 50
+  system:
+    hostname: "acrn-NUC11TNHi5"
+    platform: "Linux"
+    architecture: "x86_64"
 ```
 
 
