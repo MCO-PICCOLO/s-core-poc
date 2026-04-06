@@ -107,7 +107,6 @@ Run the workflow in this order:
    cd ~/s-core-poc/Node2/examples
    ```
 4. Run Timpani workflow:
-  ### replace the node name in reschedule_sea.yaml found in Node1 path ~/s-core-poc/Node1/pullpiri/examples/resources/reschedule_sea.yaml, put the Node2's hostname   
    ```sh
    cd resources
      ### replace the node name in safe-exit-assist.yaml, put the Node2's hostname   
