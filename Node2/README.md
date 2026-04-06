@@ -67,6 +67,44 @@ sudo apt install -y libsystemd-dev
 
 ## Setup Steps
 
+You have two options: **Automated** or **Manual** setup.
+
+### Option A: Automated Setup (Recommended)
+
+Use the provided script to automatically build all components:
+
+```bash
+# Navigate to scripts directory
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
+
+# Make script executable
+chmod +x setup_node2.sh
+
+# Run system setup (installs prerequisites and builds all binaries)
+sudo ./setup_node2.sh
+```
+
+**What this does:**
+- Installs Rust 1.90.0, Bazel, Java 17, Podman (if not present)
+- Creates `/opt/pullpiri/` directory structure
+- Builds NodeAgent binary (~100MB)
+- Builds Timpani-n binary
+- Builds sea-app container image
+- Creates WORKSPACE file
+
+**Duration:** ~10-15 minutes (depending on system and whether packages are cached)
+
+After running the automated script, proceed to:
+- **Step 1**: Configure `/etc/piccolo/nodeagent.yaml`
+- **Step 2**: Update `pullpiri_lm_config.json`
+- **Step 7**: Clean existing containers (for subsequent runs)
+
+### Option B: Manual Setup
+
+Follow Steps 1-6 below for manual installation and build process.
+
+---
+
 ### Step 1 — Configure NodeAgent
 
 Create the NodeAgent configuration file with your Node 1 (Master) and Node 2 (Worker) IP addresses:
@@ -224,17 +262,8 @@ sudo podman images | grep sea_app
 sdv.lge.com/demo/sea_app  1.0  <image-id>  <size>  <time>
 ```
 
-### Step 6 — Create Bazel WORKSPACE File
 
-```bash
-# Navigate to lifecycle directory
-cd ~/s-core-poc/Node2/lifecycle
-
-# Create WORKSPACE file (required by Bazel)
-touch WORKSPACE
-```
-
-### Step 7 — Clean Existing Containers (Before Each Run)
+### Step 6 — Clean Existing Containers (Before Each Run)
 
 > **Note:** On the first run, there won't be any existing containers. This step is needed for subsequent runs.
 
@@ -422,7 +451,29 @@ On **Node 1** (Launch Manager / timpani-o terminal):
 
 ## Quick Reference Commands
 
-### First-Time Setup
+### Automated Setup (Recommended)
+
+```bash
+# Navigate to scripts directory
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
+
+# Run automated setup
+sudo ./setup_node2.sh
+
+# Configure nodeagent (replace IPs)
+sudo mkdir -p /etc/piccolo
+sudo nano /etc/piccolo/nodeagent.yaml
+
+# Update pullpiri_lm_config.json
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM/config
+nano pullpiri_lm_config.json
+
+# Start Launch Manager
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
+sudo ./run.sh
+```
+
+### Manual First-Time Setup
 
 ```bash
 # Step 1: Configure nodeagent (replace IPs)
