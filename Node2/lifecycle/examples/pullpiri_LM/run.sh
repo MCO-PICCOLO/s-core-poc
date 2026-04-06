@@ -65,41 +65,15 @@ sudo cp "$CFG_DIR/lm_demo.bin"  "$ETC_DIR/lm_demo.bin"
 sudo cp "$CFG_DIR/hm_demo.bin"  "$ETC_DIR/hm_demo.bin"
 sudo cp "$CFG_DIR/hmcore.bin"   "$ETC_DIR/hmcore.bin"
 
-# ---- Step 3: Sync Pullpiri Binaries ----
+# ---- Step 3: Copy logging configs ----
 echo ""
-echo "[3/5] Syncing nodeagent and timpani-n binaries to /opt/pullpiri/bin ..."
-# Resolve binaries from workspace-root-relative locations
-NODEAGENT_BIN="$WORKSPACE_ROOT/nodeagent"
-TIMP_N_BIN="$WORKSPACE_ROOT/../TIMPANI/timpani-n/build/timpani-n"
-
-sudo mkdir -p /opt/pullpiri/bin
-
-# Copy nodeagent
-if [ -f "$NODEAGENT_BIN" ]; then
-    sudo cp "$NODEAGENT_BIN" /opt/pullpiri/bin/nodeagent
-else
-    echo "Warning: nodeagent binary not found at $NODEAGENT_BIN"
-fi
-
-# Copy timpani-n
-if [ -f "$TIMP_N_BIN" ]; then
-    sudo cp "$TIMP_N_BIN" /opt/pullpiri/bin/timpani-n
-else
-    echo "Warning: timpani-n binary not found at $TIMP_N_BIN"
-fi
-
-sudo chown root:root /opt/pullpiri/bin/* || true
-sudo chmod +x /opt/pullpiri/bin/* || true
-
-# ---- Step 4: Copy logging configs ----
-echo ""
-echo "[4/5] Copying LM and HM logging configs to $ETC_DIR ..."
+echo "[3/4] Copying LM and HM logging configs to $ETC_DIR ..."
 sudo cp "$SCRIPT_DIR/config/lm_logging.json"         "$ETC_DIR/logging.json"
 sudo cp "$SCRIPT_DIR/config/ecu_logging_config.json"  "$ETC_DIR/ecu_logging_config.json"
 
 # ---- Step 5: Launch ----
 echo ""
-echo "[5/5] Starting Launch Manager daemon..."
+echo "[4/4] Starting Launch Manager daemon..."
 echo "      Press Ctrl+C to stop."
 echo "============================================="
 echo ""
