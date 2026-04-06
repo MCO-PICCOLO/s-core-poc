@@ -1,154 +1,338 @@
-Node2->
-# README for run.sh (Pullpiri Lifecycle Launch Manager)
+# Node 2 Setup Guide: Worker Node with NodeAgent + Timpani-n
+
+This guide provides setup instructions for **Node 2 (Worker Node)** in the S-CORE Lifecycle + Pullpiri + Timpani demo.
+
+- **Node 2 (Worker)** — Runs `nodeagent` + `timpani-n`, receives workloads (`sea-app` container), and participates in deadline-miss recovery demonstration.
+
+> **For Node 1 (Master) setup**, refer to [Node1/Node1_README.md](../Node1/Node1_README.md)
+
+---
 
 ## Overview
-This script (`run.sh`) automates the build and launch process for the S-CORE Lifecycle Launch Manager with Pullpiri components. It compiles the required binaries, copies configuration and logging files, syncs necessary binaries to `/opt/pullpiri/bin`, and finally starts the Launch Manager daemon.
 
-## Steps Performed
+The `run.sh` script automates the build and launch process for the S-CORE Lifecycle Launch Manager with Pullpiri components on Node 2. It performs the following:
+
 1. **Build**: Uses Bazel to build the Pullpiri configuration and the Launch Manager daemon.
 2. **Copy Flatbuffer Configs**: Copies the compiled Flatbuffer configuration binaries to the workspace's `etc` directory.
 3. **Sync Binaries**: Copies `nodeagent` and `timpani-n` binaries to `/opt/pullpiri/bin` if they exist at the workspace root.
 4. **Copy Logging Configs**: Copies logging configuration files to the `etc` directory.
 5. **Launch**: Starts the Launch Manager daemon.
 
-## Usage
-```sh
-### based on user config use root , if not root also it works
-sudo ./run.sh
-```
-- Run the script from the `pullpiri_LM` directory.
-- `sudo` is required for copying files to system directories and setting permissions.
+---
 
 ## Prerequisites
-- Bazel must be installed and available in your PATH.
-- The workspace should contain the required source files and Bazel build targets.
-- `nodeagent` and `timpani-n`
 
- ## Node 2 — Worker Setup & Launch
-Step 1 — Check and Clean the Container
-Before starting, make sure no stale sea-app container is running:
+Before starting, ensure you have:
 
-podman ps -a
-If sea-app appears in the list:
+- **Ubuntu 22.04 LTS** (Ubuntu 24.04 requires different setup)
+- **sudo access**
+- **Network connectivity to Node 1** (Master)
+- **Git repository cloned:** `s-core-poc/`
+- **Node 1 must be running** before starting Node 2
+- **Bazel** must be installed and available in your PATH
+- **Rust and Cargo** installed
 
-podman rm -f sea-app
-Step 2 — Configure NodeAgent with Correct IPs
-Edit /etc/piccolo/nodeagent.yaml to point to Node 1 as the master and set this node's own IP:
+### Required Software
 
-sudo nano /etc/piccolo/nodeagent.yaml
-Set these fields:
-
-nodeagent:
-  node_name: "<NODE2_HOSTNAME>"   # hostname of Node 2 (run: hostname)
-  node_type: "vehicle"
-  node_role: "nodeagent"
-  master_ip: "<NODE1_IP>"         # ← Node 1 IP
-  node_ip:   "<NODE2_IP>"         # ← Node 2 IP
-  grpc_port: 47004
-  log_level: "info"
-
-
-#### update pullpiri_lm_config.json file in the path "/home/lge/s-core-poc/Node2/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json"
-### update the timpani-n Ip config value to reflect the IP of Node1 for eg as below:
+Install these prerequisites if not already present:
 
 ```bash
- "timpani-n": {
-            "component_properties": {
-                "binary_name": "timpani-n",
-                "process_arguments": [
-                    "-n",
-                    "perf_node",
-                    "-c",
-                    "1",
-                    "-P",
-                    "85",
-                    "-p",
-                    "7777",
-                    "-l",
-                    "4",
-                    "10.221.40.153"
-                ],
-                "depends_on": []
-            },
+# Update system
+sudo apt update
+
+# Install Rust (required for nodeagent and sea_app)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+rustup toolchain install 1.90.0
+
+# Install Bazel (required for lifecycle)
+sudo wget -O /usr/local/bin/bazel \
+  https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64
+sudo chmod +x /usr/local/bin/bazel
+
+# Install Java 17 (required for Bazel)
+sudo apt install -y openjdk-17-jdk
+
+# Install build tools
+sudo apt install -y cmake build-essential git
+
+# Install Podman (required for containers)
+sudo apt install -y podman
+
+# Install Timpani dependencies
+sudo apt install -y libsystemd-dev
 ```
 
-# Node2: Building and Running nodeagent with Lifecycle Launch manager
+---
 
-Node2 is responsible for building the Pullpiri `nodeagent` binary (note: the binary is around 100MB and cannot be uploaded to GitHub, so it must be built locally on Node2) and running the integration using its own run script.
+## Setup Steps
 
-### Steps to Build nodeagent
+### Step 1 — Configure NodeAgent
 
-1. Go to the nodeagent source directory:
-   ```sh
-   cd Node2/pullpiri/src/agent/nodeagent
-   ```
-2. Build the nodeagent binary using Cargo:
-   ```sh
-   cargo build --release
-   ```
-   The resulting binary will be located at:
-   ```
-   target/release/nodeagent
-   ```
-3. Copy the built binary to the Node2 lifecycle repository:
-   ```sh
-   cp target/release/nodeagent ../../../../lifecycle/
-   ```
-   Adjust the destination path as needed for your setup.
+Create the NodeAgent configuration file with your Node 1 (Master) and Node 2 (Worker) IP addresses:
 
-### Timpani binaries
+```bash
+# Create directory if it doesn't exist
+sudo mkdir -p /etc/piccolo
 
-`timpani-n`  must also be present in `/opt/pullpiri/bin/`.  
-Build them from the **Timpani** repo:
-cd ../../TIMPANI/timpani-n
-mkdir build
+# Create nodeagent.yaml (replace <NODE1_IP> and <NODE2_IP> with actual IPs)
+sudo tee /etc/piccolo/nodeagent.yaml > /dev/null <<EOF
+nodeagent:
+  node_name: "$(hostname)"
+  node_type: "vehicle"
+  node_role: "nodeagent"
+  master_ip: "<NODE1_IP>"
+  node_ip: "<NODE2_IP>"
+  grpc_port: 47004
+  log_level: "info"
+EOF
+
+# Verify configuration
+cat /etc/piccolo/nodeagent.yaml
+```
+
+**Replace placeholders:**
+- `<NODE1_IP>` — IP address of Node 1 (Master), e.g., `192.168.10.100`
+- `<NODE2_IP>` — IP address of this Node 2 (Worker), e.g., `192.168.10.101`
+
+### Step 2 — Update pullpiri_lm_config.json
+
+Update the Timpani-n IP configuration to point to Node 1:
+
+```bash
+# Navigate to config directory
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM/config
+
+# Edit pullpiri_lm_config.json
+nano pullpiri_lm_config.json
+# or
+vi pullpiri_lm_config.json
+```
+
+**Update the `timpani-n` IP config value** to reflect the IP of Node 1:
+
+```json
+"timpani-n": {
+    "component_properties": {
+        "binary_name": "timpani-n",
+        "process_arguments": [
+            "-n",
+            "perf_node",
+            "-c",
+            "1",
+            "-P",
+            "85",
+            "-p",
+            "7777",
+            "-l",
+            "4",
+            "<NODE1_IP>"
+        ],
+        "depends_on": []
+    },
+}
+```
+
+Replace `<NODE1_IP>` with Node 1's actual IP address (e.g., `10.221.40.153`).
+
+### Step 3 — Build NodeAgent Binary
+
+> **Important:** The `nodeagent` binary is around 100MB and cannot be uploaded to GitHub, so it **must be built locally** on Node 2.
+
+```bash
+# Navigate to nodeagent source directory
+cd ~/s-core-poc/Node2/pullpiri/src/agent/nodeagent
+
+# Build with Cargo (Release mode)
+cargo build --release
+
+# Create directory for binaries
+sudo mkdir -p /opt/pullpiri/bin
+
+# Copy nodeagent binary to system location
+sudo cp target/release/nodeagent /opt/pullpiri/bin/
+sudo chmod +x /opt/pullpiri/bin/nodeagent
+
+# Verify binary exists (should be ~100MB)
+ls -lh /opt/pullpiri/bin/nodeagent
+```
+
+**Expected output:**
+```
+-rwxr-xr-x 1 root root 100M ... /opt/pullpiri/bin/nodeagent
+```
+
+### Step 4 — Build Timpani-n
+
+```bash
+# Navigate to TIMPANI directory
+cd ~/s-core-poc/Node2/TIMPANI
+
+# Clone libbpf library (if not already present)
+if [ ! -d "libbpf/src" ]; then
+    git clone https://github.com/libbpf/libbpf.git
+fi
+
+# Build timpani-n
+cd timpani-n
+mkdir -p build
 cd build
 cmake ..
 make
 
+# Copy binary to /opt/pullpiri/bin
+sudo cp timpani-n /opt/pullpiri/bin/
+sudo chmod +x /opt/pullpiri/bin/timpani-n
+
+# Verify
+ls -lh /opt/pullpiri/bin/timpani-n
+```
+
+### Step 5 — Build sea-app Container
+
+The `sea-app` is a Safe Exit Assist application that will be deployed as a container workload:
+
 ```bash
-sudo cp -f timpani-n /opt/pullpiri/bin/
-#sudo cp <timpani_build_dir>/timpani-n /opt/pullpiri/bin/
-sudo chmod +x /opt/pullpiri/bin/timpani-n 
-#sudo chmod +x /opt/pullpiri/bin/timpani-n
+# Navigate to sea_app directory
+cd ~/s-core-poc/Node2/sea_app
 
-## What Happens Next?
-Run the workflow in this order:
-1. Build `sea_app` and its Podman image:
-   ```sh
-   cd ~/s-core-poc/Node2/sea_app
-   cargo build --release
-   sudo podman build -t sdv.lge.com/demo/sea_app:1.0 .
-   ```
-2. Run the Lifecycle Launch Manager script:
-   ```sh
-   ### check if sea_app container is running, and remove it before running below
-  sudo podman rm -f sea-app_sea-app
-   cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
-   sudo ./run.sh
-   ```
-3. Move to the examples directory:
-   ```sh
-   cd ~/s-core-poc/Node2/examples
-   ```
-4. Run Timpani workflow:
-   ```sh
-   cd resources
-     ### replace the node name in safe-exit-assist.yaml, put the Node2's hostname   
+# Build the Rust binary
+cargo build --release
 
-   ### replace ip of curlcommand with Node1 IP
-   bash timpani.sh
-### once OK comes check the current CPU affinity
-   taskset -c -p $(pgrep -x sea_app)
+# Build Podman container image
+sudo podman build -t sdv.lge.com/demo/sea_app:1.0 .
 
-## Triggering a Deadline Miss — CPU Stress
+# Verify image was created
+sudo podman images | grep sea_app
+```
 
-### Step  — Run the CPU Stress Tool on Node 2
+**Expected output:**
+```
+sdv.lge.com/demo/sea_app  1.0  <image-id>  <size>  <time>
+```
+
+### Step 6 — Create Bazel WORKSPACE File
+
+```bash
+# Navigate to lifecycle directory
+cd ~/s-core-poc/Node2/lifecycle
+
+# Create WORKSPACE file (required by Bazel)
+touch WORKSPACE
+```
+
+### Step 7 — Clean Existing Containers (Before Each Run)
+
+> **Note:** On the first run, there won't be any existing containers. This step is needed for subsequent runs.
+
+Before starting the Launch Manager, ensure no stale `sea-app` container is running:
+
+```bash
+# Check for existing containers
+sudo podman ps -a
+
+# If sea-app appears in the list, stop and remove it
+sudo podman stop sea-app 2>/dev/null || true
+sudo podman rm -f sea-app 2>/dev/null || echo "No existing container to remove (first run)"
+```
+
+---
+
+## Running the Launch Manager
+
+After completing all setup steps, start the Launch Manager:
+
+```bash
+# Navigate to run script location
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
+
+# Make script executable
+chmod +x run.sh
+
+# Start Launch Manager (runs nodeagent and timpani-n)
+sudo ./run.sh
+```
+
+> **Note:** Run the script from the `pullpiri_LM` directory. `sudo` is required for copying files to system directories and setting permissions.
+
+**Expected output:**
+```
+=============================================
+  Pullpiri Lifecycle - Build & Run
+=============================================
+Building Pullpiri configuration...
+Starting Launch Manager daemon...
+[nodeagent] Connecting to master at <NODE1_IP>...
+[timpani-n] Monitoring started
+```
+
+**⚠️ Leave this terminal running.** The Launch Manager will print logs for all managed processes.
+
+---
+
+## Demo Workflow — Deadline Miss Recovery
+
+Once Node 2 is running, follow these steps to demonstrate automated deadline-miss recovery:
+
+### Step 1 — Update Deployment Configuration
+
+Update the workload manifest with Node 2's hostname:
+
+```bash
+cd ~/s-core-poc/Node2/examples/resources
+
+# Update safe-exit-assist.yaml with this node's hostname
+HOSTNAME=$(hostname)
+sed -i "s/node_name: .*/node_name: $HOSTNAME/g" safe-exit-assist.yaml
+
+# Verify the change
+cat safe-exit-assist.yaml | grep node_name
+```
+
+### Step 2 — Deploy sea-app Container
+
+Deploy the container workload from Node 2 to Node 1's API server:
+
+```bash
+cd ~/s-core-poc/Node2/examples
+
+# Update timpani.sh with Node 1's IP address
+sed -i "s|http://.*:47099|http://<NODE1_IP>:47099|g" timpani.sh
+
+# Deploy the workload
+bash timpani.sh
+```
+
+**Expected response:** `OK` from API server
+
+### Step 3 — Verify Container Deployment
+
+Check that the container is running with initial CPU allocation:
+
+```bash
+# Check container status
+sudo podman ps | grep sea_app
+
+# Check initial CPU affinity (should be 1 CPU)
+taskset -c -p $(pgrep -x sea_app)
+```
+
+**Expected output:**
+```
+pid <pid>'s current affinity list: 1
+```
+
+This means the container is running on **CPU core 1 only**.
+
+### Step 4 — Trigger Deadline Miss with CPU Stress
 
 With `sea-app` running, saturate its assigned CPUs to force deadline misses:
 
 ```bash
 cd ~/s-core-poc/Node2/TIMPANI/timpani-n/tools
+
+# Run stress tool
+# Arguments: <app_name> <duration_seconds> <cpu_load_percentage>
 sudo chrt -f 51 ./stress_app_cpus.sh sea_app 60 98
 ```
 
@@ -158,30 +342,22 @@ sudo chrt -f 51 ./stress_app_cpus.sh sea_app 60 98
 | `60` | duration | stress for 60 seconds |
 | `98` | load % | 98% CPU load on the assigned core(s) |
 
-This saturates the CPU core that `sea_app` is pinned to, causing it to miss
-its real-time deadline.
+This saturates the CPU core that `sea_app` is pinned to, causing it to miss its real-time deadline.
 
-### What to Expect
+**What happens:**
 
-On **Node 1** (Launch Manager terminal), `timpani-n` reports deadline misses
-back to `timpani-o`:
+On **Node 1** (Launch Manager terminal), `timpani-n` reports deadline misses back to `timpani-o`:
 
 ```
 [timpani-n] DEADLINE MISS detected for task sea_app (node: sea_node)
 [timpani-o] Received deadline miss report from sea_node
 ```
 
-Pullpiri's `actioncontroller` detects this through the `statemanager` and
-automatically generates a `reschedule` action.
+Pullpiri's `actioncontroller` detects this through the `statemanager` and automatically generates a `reschedule` action.
 
----
+### Step 5 — Observe Automatic Reschedule Recovery
 
-## Automatic Schedule Update — Recovery
-
-### Step 7 — Observe the Automatic Reschedule
-
-Pullpiri sends an updated `Schedule` to `timpani-o` **before** restarting the
-container, expanding the CPU affinity from 1 to 2 cores:
+Pullpiri sends an updated `Schedule` to `timpani-o` **before** restarting the container, expanding the CPU affinity from 1 to 2 cores:
 
 **Before (initial schedule):**
 
@@ -212,8 +388,12 @@ PID=$(pidof sea_app)
 taskset -cp $PID
 ```
 
-The `sea_app` process should now be schedulable on 2nd CPU instead of 1st cpu,
-resolving the deadline misses.
+**Expected output:**
+```
+pid <new_pid>'s current affinity list: 1,2
+```
+
+The `sea_app` process should now be schedulable on 2nd CPU instead of 1st cpu, resolving the deadline misses.
 
 On **Node 1** (Launch Manager / timpani-o terminal):
 
@@ -223,7 +403,81 @@ On **Node 1** (Launch Manager / timpani-o terminal):
 [actioncontroller] container sea-app restarted with new schedule
 ```
 
-## Troubleshooting
+**✅ Success!** The system detected the deadline miss and automatically increased CPU allocation from 1 → 2 cores, resolving the performance issue.
+
+---
+
+## Quick Reference Commands
+
+### First-Time Setup
+
+```bash
+# Step 1: Configure nodeagent (replace IPs)
+sudo mkdir -p /etc/piccolo
+sudo nano /etc/piccolo/nodeagent.yaml
+
+# Step 2: Update pullpiri_lm_config.json
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM/config
+nano pullpiri_lm_config.json
+
+# Step 3: Build nodeagent
+cd ~/s-core-poc/Node2/pullpiri/src/agent/nodeagent
+cargo build --release
+sudo mkdir -p /opt/pullpiri/bin
+sudo cp target/release/nodeagent /opt/pullpiri/bin/
+sudo chmod +x /opt/pullpiri/bin/nodeagent
+
+# Step 4: Build timpani-n
+cd ~/s-core-poc/Node2/TIMPANI
+[ ! -d "libbpf/src" ] && git clone https://github.com/libbpf/libbpf.git
+cd timpani-n && mkdir -p build && cd build
+cmake .. && make
+sudo cp timpani-n /opt/pullpiri/bin/
+sudo chmod +x /opt/pullpiri/bin/timpani-n
+
+# Step 5: Build sea-app container
+cd ~/s-core-poc/Node2/sea_app
+cargo build --release
+sudo podman build -t sdv.lge.com/demo/sea_app:1.0 .
+
+# Step 6: Create WORKSPACE
+cd ~/s-core-poc/Node2/lifecycle
+touch WORKSPACE
+
+# Step 7: Start Launch Manager
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
+sudo ./run.sh
+```
+
+### Subsequent Runs
+
+```bash
+# Clean and restart
+sudo podman stop sea-app 2>/dev/null || true
+sudo podman rm -f sea-app 2>/dev/null || true
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
+sudo ./run.sh
+```
+
+### Demo Workflow
+
+```bash
+# 1. Deploy sea-app (update <NODE1_IP> first)
+cd ~/s-core-poc/Node2/examples
+bash timpani.sh
+
+# 2. Check initial CPU affinity
+taskset -c -p $(pgrep -x sea_app)
+
+# 3. Trigger deadline miss
+cd ~/s-core-poc/Node2/TIMPANI/timpani-n/tools
+sudo chrt -f 51 ./stress_app_cpus.sh sea_app 60 98
+
+# 4. Verify reschedule (after ~10-20 seconds)
+taskset -c -p $(pgrep -x sea_app)
+```
+
+---
 
 | Symptom | Likely Cause | Fix |
 |---|---|---|
