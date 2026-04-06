@@ -85,7 +85,6 @@ sudo ./setup_node2.sh
 ```
 
 **What this does:**
-- Installs Rust 1.90.0, Bazel, Java 17, Podman (if not present)
 - Creates `/opt/pullpiri/` directory structure
 - Builds NodeAgent binary (~100MB)
 - Builds Timpani-n binary

@@ -356,8 +356,7 @@ main() {
     check_sudo
 
     # Run all setup steps
-    install_prerequisites
-    echo ""
+
 
     setup_directories
     echo ""

@@ -76,6 +76,12 @@ Node2 is responsible for building the Pullpiri `nodeagent` and `timpani-n` with 
 
 - **[Node2 Setup Instructions →](Node2/README.md)**
 
+**Quick automated setup:**
+```bash
+cd Node2/lifecycle/examples/pullpiri_LM
+sudo ./setup_node2.sh
+```
+
 For more details and system setup, see the Node2 README.
 
 ---
