@@ -1,4 +1,4 @@
-# End-to-End Demo: Pullpiri + S-CORE Lifecycle + Timpani Deadline-Miss Recovery
+# Node 1 Setup Guide : Pullpiri + S-CORE Lifecycle + Timpani Deadline-Miss Recovery
 
 This document walks through the full two-node demo:
 

@@ -78,18 +78,18 @@ sudo mkdir -p /etc/piccolo
 # Create nodeagent.yaml (replace <NODE1_IP> and <NODE2_IP> with actual IPs)
 sudo tee /etc/piccolo/nodeagent.yaml > /dev/null <<EOF
 nodeagent:
-  node_name: "lge-oldnuc"
+  node_name: "$(hostname)"
   node_type: "vehicle"
   node_role: "nodeagent"
-  master_ip: "192.168.10.100"
-  node_ip: "192.168.10.101"
+  master_ip: "<Node1 Ip>"
+  node_ip: "<Node 2 IP - present system IP>"
   grpc_port: 47004
   log_level: "info"
   metrics:
     collection_interval: 5
     batch_size: 50
   system:
-    hostname: "lge-oldnuc"
+    hostname: "$(hostname)"
     platform: "Linux"
     architecture: "x86_64"
 EOF
@@ -158,7 +158,10 @@ sudo mkdir -p /opt/pullpiri/bin
 
 # Copy nodeagent binary to system location
 sudo cp target/release/nodeagent /opt/pullpiri/bin/
-sudo chmod +x /opt/pullpiri/bin/nodeagent
+
+# Set ownership and permissions
+sudo chown root:root /opt/pullpiri/bin/* || true
+sudo chmod +x /opt/pullpiri/bin/* || true
 
 # Verify binary exists (should be ~100MB)
 ls -lh /opt/pullpiri/bin/nodeagent
@@ -189,7 +192,10 @@ make
 
 # Copy binary to /opt/pullpiri/bin
 sudo cp timpani-n /opt/pullpiri/bin/
-sudo chmod +x /opt/pullpiri/bin/timpani-n
+
+# Set ownership and permissions
+sudo chown root:root /opt/pullpiri/bin/* || true
+sudo chmod +x /opt/pullpiri/bin/* || true
 
 # Verify
 ls -lh /opt/pullpiri/bin/timpani-n
@@ -432,7 +438,8 @@ cd ~/s-core-poc/Node2/pullpiri/src/agent/nodeagent
 cargo build --release
 sudo mkdir -p /opt/pullpiri/bin
 sudo cp target/release/nodeagent /opt/pullpiri/bin/
-sudo chmod +x /opt/pullpiri/bin/nodeagent
+sudo chown root:root /opt/pullpiri/bin/* || true
+sudo chmod +x /opt/pullpiri/bin/* || true
 
 # Step 4: Build timpani-n
 cd ~/s-core-poc/Node2/TIMPANI
@@ -440,7 +447,8 @@ cd ~/s-core-poc/Node2/TIMPANI
 cd timpani-n && mkdir -p build && cd build
 cmake .. && make
 sudo cp timpani-n /opt/pullpiri/bin/
-sudo chmod +x /opt/pullpiri/bin/timpani-n
+sudo chown root:root /opt/pullpiri/bin/* || true
+sudo chmod +x /opt/pullpiri/bin/* || true
 
 # Step 5: Build sea-app container
 cd ~/s-core-poc/Node2/sea_app

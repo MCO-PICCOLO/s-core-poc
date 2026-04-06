@@ -1,4 +1,23 @@
 
+# s-core-poc
+
+Integration PoC between S-CORE modules and Pullpiri/Timpani
+
+## Overview
+s-core-poc demonstrates integration between S-CORE modules and Pullpiri/Timpani systems across two nodes (Node-1: Safety Node, Node-2 : Non Safety)
+
+---
+
+## Architecture Diagram
+
+![S-CORE & Pullpiri Multi-Node Architecture](./Node1/arch.png)
+
+The diagram shows the two-node architecture:
+- **Node 1 (Safety/Control Plane)**: Pullpiri Service Mesh, Timpani-O, S-CORE Lifecycle Manager
+- **Node 2 (Non-Safety/Execution)**: NodeAgent, Timpani-N, Container Workloads
+
+---
+
 ## Getting Started
 
 Clone the repository using one of the following methods:
@@ -31,12 +50,8 @@ s-core-poc/
 ├── README.md
 └── ...
 ```
-# s-core-poc
 
-Integration PoC between S-CORE modules and Pullpiri/Timpani
-
-## Overview
-s-core-poc demonstrates integration between S-CORE modules and Pullpiri/Timpani systems across two nodes (Node-1: Safety Node, Node-2 : Non Safety)
+---
 
 ---
 
@@ -44,7 +59,7 @@ s-core-poc demonstrates integration between S-CORE modules and Pullpiri/Timpani 
 
 To build and run the S-CORE Lifecycle Launch Manager with Pullpiri components, follow the instructions in the Node1 run script:
 
-- [Node1  instructions](Node1/DEMO_README.md)
+- **[Node1 Setup Instructions →](Node1/DEMO_README.md)**
 
 This script will:
 - Build the required S-CORE and Pullpiri binaries using Bazel and Cargo
@@ -55,16 +70,13 @@ See the linked README for detailed prerequisites and step-by-step instructions.
 
 ---
 
+## Node2: Building and Setup of Node2
 
-## Node2: Building and Setup of  Node2 
+Node2 is responsible for building the Pullpiri `nodeagent` and `timpani-n` with Score Life cycle binary (note: the binary is around 100MB and cannot be uploaded to GitHub, so it must be built locally on Node2) and running the integration using its own run script.
 
-Node2 is responsible for building the Pullpiri `nodeagent` and 'timpani-n' with Score Life cycle binary (note: the binary is around 100MB and cannot be uploaded to GitHub, so it must be built locally on Node2) and running the integration using its own run script.
+- **[Node2 Setup Instructions →](Node2/README.md)**
 
-
-For more details and system setup, see the [Node2 README](Node2/README.md).
-
-
-
+For more details and system setup, see the Node2 README.
 
 ---
 
@@ -72,3 +84,4 @@ For more details and system setup, see the [Node2 README](Node2/README.md).
 
 - Ensure all prerequisites (Bazel, Rust, Java, sudo access) are met as described in the respective READMEs.
 - For troubleshooting and advanced configuration, refer to the documentation in each module's directory.
+- To add the architecture diagram: Place your architecture PNG image at `.github/architecture.png`
