@@ -10,7 +10,7 @@
 # Run (signal mode with Timpani-N — requires host PID namespace):
 #   docker run --rm --network host --pid host sdv.lge.com/demo/sea_app:1.0
 
-FROM debian:bookworm-slim
+FROM ubuntu:24.04
 
 WORKDIR /app
 
