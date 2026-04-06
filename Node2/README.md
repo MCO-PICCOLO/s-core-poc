@@ -116,11 +116,114 @@ Run the workflow in this order:
 ### once OK comes check the current CPU affinity
    taskset -c -p $(pgrep -x sea_app)
 
-5. run the stress app from the s-core-poc/Node2/TIMPANI/timpani-n/tool
-sudo chrt -f 51 ./stress_app_cpus.sh sea_app 60 99 [60 is timer secs, 99 is percentage of cpu load]
+## Triggering a Deadline Miss — CPU Stress
 
-6.once gain check cpu rescheduling
-taskset -c -p $(pgrep -x sea_app) check cpu affinity is changed
+### Step  — Run the CPU Stress Tool on Node 2
+
+With `sea-app` running, saturate its assigned CPUs to force deadline misses:
+
+```bash
+cd ~/s-core-poc/Node2/TIMPANI/timpani-n/tools
+sudo chrt -f 51 ./stress_app_cpus.sh sea_app 60 98
+```
+
+| Argument | Value | Meaning |
+|---|---|---|
+| `sea_app` | app name | process to stress (matches `/proc/<pid>/comm`) |
+| `60` | duration | stress for 60 seconds |
+| `98` | load % | 98% CPU load on the assigned core(s) |
+
+This saturates the CPU core that `sea_app` is pinned to, causing it to miss
+its real-time deadline.
+
+### What to Expect
+
+On **Node 1** (Launch Manager terminal), `timpani-n` reports deadline misses
+back to `timpani-o`:
+
+```
+[timpani-n] DEADLINE MISS detected for task sea_app (node: sea_node)
+[timpani-o] Received deadline miss report from sea_node
+```
+
+Pullpiri's `actioncontroller` detects this through the `statemanager` and
+automatically generates a `reschedule` action.
 
 ---
-**Note:** The script will stop and report errors if any step fails (due to `set -e`).
+
+## Automatic Schedule Update — Recovery
+
+### Step 7 — Observe the Automatic Reschedule
+
+Pullpiri sends an updated `Schedule` to `timpani-o` **before** restarting the
+container, expanding the CPU affinity from 1 to 2 cores:
+
+**Before (initial schedule):**
+
+```yaml
+- name: sea_app
+  cpu_affinity: 2   # first CPU is assigned
+  period: 200000
+  runtime: 160000
+```
+
+**After (auto-rescheduled):**
+
+```yaml
+- name: sea_app
+  cpu_affinity: 4   # 2 CPU is assigned
+  period: 200000
+  runtime: 160000
+```
+
+On **Node 2**, verify the container restarted with the new CPU assignment:
+
+```bash
+# Check the container restarted
+sudo podman ps -a
+
+# Check CPU affinity of the sea_app process
+PID=$(pidof sea_app)
+taskset -cp $PID
+```
+
+The `sea_app` process should now be schedulable on 2nd CPU instead of 1st cpu,
+resolving the deadline misses.
+
+On **Node 1** (Launch Manager / timpani-o terminal):
+
+```
+[actioncontroller] reschedule action triggered for sea-exit-assist
+[timpani-o] Schedule updated for sea_node
+[actioncontroller] container sea-app restarted with new schedule
+```
+
+## Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| `sea-app` not deployed on Node 2 | `nodeagent` not connected to master | Check `master_ip` in `/etc/piccolo/nodeagent.yaml` |
+| `timpani-n` not connecting | Wrong IP passed to `-a` flag | Use Node 1 IP: `-a <NODE1_IP>` |
+| API curl returns connection refused | Pullpiri not fully started | Wait for `actioncontroller` init log on Node 1, then retry |
+| No deadline miss detected | Stress tool running on wrong PID | Confirm `sea_app` is running: `pidof sea_app` |
+| Container not rescheduled to 2 CPUs | `actioncontroller` reschedule fix not built | Rebuild: `cargo build -p actioncontroller` and restart Node 1 |
+| LM kills `adas_primary` immediately | `.so` libs missing from `/opt/pullpiri/lib/` | Run `build_adas_libs.sh` and copy `.so` files to `/opt/pullpiri/lib/` |
+
+---
+
+## Reference: Key File Locations
+
+| File / Binary | Path |
+|---|---|
+| Launch Manager run script | `lifecycle/lifecycle/examples/pullpiri_LM/run.sh` |
+| LM config | `lifecycle/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json` |
+| Workload apply script | `pullpiri/examples/timpani.sh` |
+| Workload manifest (timpani) | `pullpiri/examples/resources/timpani-test.yaml` |
+| sea-app manifest | `new_timpani/sea_app/safe-exit-assist.yaml` |
+| Node configuration (timpani-o) | `pullpiri/examples/resources/timpani/node_configurations.yaml` |
+| NodeAgent config | `/etc/piccolo/nodeagent.yaml` |
+| Piccolo settings | `/etc/piccolo/settings.yaml` |
+| Stress tool | `TIMPANI/timpani-n/tools/stress_app_cpus.sh` |
+| adas_primary `.so` libs | `feo/examples/rust/mini-adas/lib/` |
+| All Pullpiri binaries | `/opt/pullpiri/bin/` |
+| Shared `.so` (runtime) | `/opt/pullpiri/lib/` |
