@@ -246,6 +246,37 @@ cat ~/s-core-poc/Node1/lifecycle/lifecycle/examples/pullpiri_LM/SETUP.md
 
 ---
 
+## Cleanup Script
+
+To remove all installed files and build artifacts, use the provided cleanup script:
+
+```bash
+cd ~/s-core-poc/Node1/lifecycle/lifecycle/examples/pullpiri_LM
+sudo ./clean.sh
+```
+
+**What it removes:**
+- `/opt/pullpiri/` (all binaries, libraries, configs)
+- Build artifacts in `pullpiri/src/target/`
+- Build artifacts in `TIMPANI/timpani-o/build/` and `TIMPANI/timpani-n/build/`
+- ADAS libraries in `feo/examples/rust/mini-adas/lib/`
+- ADAS build artifacts in `feo/examples/rust/mini-adas/target/`
+- Lifecycle Bazel symlinks (`bazel-bin`, `bazel-out`, etc.)
+- Generated config files in `lifecycle/etc/`
+
+**Preserved:**
+- `/etc/piccolo/settings.yaml` (custom IP configuration)
+- `TIMPANI/libbpf/` (git clone - remove manually if needed)
+
+**After cleanup, to rebuild:**
+```bash
+cd ~/s-core-poc/Node1/lifecycle/lifecycle/examples/pullpiri_LM
+sudo ./setup_system.sh
+./build_adas_libs.sh
+```
+
+---
+
 ## Troubleshooting
 
 | Issue | Solution |

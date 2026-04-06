@@ -524,6 +524,33 @@ cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
 sudo ./run.sh
 ```
 
+### Complete Cleanup
+
+To remove all installed files and build artifacts:
+
+```bash
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
+sudo ./clean_node2.sh
+```
+
+**What it removes:**
+- `/opt/pullpiri/` (nodeagent, timpani-n, configs)
+- Build artifacts in `pullpiri/src/target/`
+- Build artifacts in `TIMPANI/timpani-n/build/`
+- sea-app container image (`sdv.lge.com/demo/sea_app:1.0`)
+- sea-app build artifacts in `sea_app/target/`
+- Lifecycle `WORKSPACE` file and Bazel symlinks
+
+**Preserved:**
+- `/etc/piccolo/settings.yaml` and `/etc/piccolo/nodeagent.yaml` (custom configs)
+- `TIMPANI/libbpf/` (git clone - remove manually if needed)
+
+**After cleanup, to rebuild:**
+```bash
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
+sudo ./setup_node2.sh
+```
+
 ### Demo Workflow
 
 ```bash
