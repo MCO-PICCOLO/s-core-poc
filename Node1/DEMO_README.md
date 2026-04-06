@@ -56,6 +56,8 @@ dds:
   domain_id: 100
 ```
 
+ ### replace the node name in reschedule_sea.yaml found in Node1 path ~/s-core-poc/Node1/pullpiri/examples/resources/reschedule_sea.yaml, put the Node2's hostname   
+ 
 ### Step 2 — Clear the Database (Every Run)
 
 Before each demo run, wipe any stale state from a previous session:
