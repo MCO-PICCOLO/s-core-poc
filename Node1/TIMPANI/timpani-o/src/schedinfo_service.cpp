@@ -212,13 +212,21 @@ std::vector<Task> SchedInfoServiceImpl::ConvertTaskInfoToTasks(const SchedInfo* 
         task.max_dmiss = grpc_task.max_dmiss();
         task.target_node = grpc_task.node_id();
 
-        // Convert CPU affinity bitmask to a single CPU index string.
-        // Use the lowest set bit (e.g. 0xF -> CPU 0, 0x4 -> CPU 2).
+        // Convert CPU affinity bitmask to a comma-separated list of allowed CPU IDs.
+        // All set bits are enumerated so the scheduler can pick the best CPU
+        // among them and timpani-n receives the full multi-bit mask.
         if (grpc_task.cpu_affinity() == 0xFFFFFFFF || grpc_task.cpu_affinity() == 0) {
             task.affinity = "any";
         } else {
-            uint32_t affinity = static_cast<uint32_t>(grpc_task.cpu_affinity());
-            task.affinity = std::to_string(__builtin_ctz(affinity));
+            uint32_t affinity_mask = static_cast<uint32_t>(grpc_task.cpu_affinity());
+            std::string affinity_str;
+            for (int bit = 0; bit < 32; ++bit) {
+                if (affinity_mask & (1u << bit)) {
+                    if (!affinity_str.empty()) affinity_str += ",";
+                    affinity_str += std::to_string(bit);
+                }
+            }
+            task.affinity = affinity_str;
         }
 
         // Set reasonable defaults for other fields
