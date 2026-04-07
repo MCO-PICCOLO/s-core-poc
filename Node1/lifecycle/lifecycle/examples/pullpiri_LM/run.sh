@@ -54,7 +54,7 @@ echo ""
 echo "[1.5/5] Building mini-adas (adas_primary + adas_secondary) with lifecycle feature..."
 cd "$MINI_ADAS_DIR/examples/rust/mini-adas"
 
-cargo clean
+# cargo clean
 # Back up the header first!
 sudo cp /usr/include/linux/stddef.h /usr/include/linux/stddef.h.bak
  

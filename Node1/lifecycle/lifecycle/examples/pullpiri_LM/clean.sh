@@ -190,8 +190,8 @@ clean_lifecycle_builds() {
             rm -f "$LIFECYCLE_ROOT/etc/hm_demo.bin" 2>/dev/null || true
             rm -f "$LIFECYCLE_ROOT/etc/hmcore.bin" 2>/dev/null || true
             rm -f "$LIFECYCLE_ROOT/etc/hmproc_adas_primary.bin" 2>/dev/null || true
-            rm -f "$LIFECYCLE_ROOT/etc/logging.json" 2>/dev/null || true
-            rm -f "$LIFECYCLE_ROOT/etc/ecu_logging_config.json" 2>/dev/null || true
+            # Preserve logging config files; they may contain user customizations.
+            log_info "Preserving lifecycle/etc/logging.json and lifecycle/etc/ecu_logging_config.json"
             log_success "Cleaned lifecycle/etc/"
         fi
     fi
