@@ -257,7 +257,9 @@ tt_error_t poll_sched_info(struct context *ctx, struct sched_info *sinfo)
         sinfo->tasks = tinfo;
     }
 
-    /* Read trailing workload_id + hyperperiod (required to advance sbuf pos) */
+    /* Read trailing workload_id + hyperperiod and store them in sinfo so that
+     * callers (e.g. register_new_tasks) can tell which workload the tasks
+     * belong to and what hyperperiod length it requires. */
     if (deserialize_str(sbuf, workload_id) < 0 ||
         deserialize_int64_t(sbuf, &hyperperiod_us) < 0) {
         TT_LOG_ERROR("poll_sched_info: failed to deserialize workload info");
@@ -266,6 +268,15 @@ tt_error_t poll_sched_info(struct context *ctx, struct sched_info *sinfo)
         free_serial_buf(sbuf);
         return TT_ERROR_NETWORK;
     }
+
+    /* Populate the sinfo fields so callers know which workload this is and
+     * what hyperperiod it uses — previously these were discarded here. */
+    strncpy(sinfo->workload_id, workload_id, sizeof(sinfo->workload_id) - 1);
+    sinfo->workload_id[sizeof(sinfo->workload_id) - 1] = '\0';
+    sinfo->pod_period = (int32_t)hyperperiod_us;   /* reuse pod_period to carry hyperperiod_us */
+
+    TT_LOG_DEBUG("poll_sched_info: workload_id='%s' hyperperiod=%lu us",
+                 sinfo->workload_id, hyperperiod_us);
 
     free_serial_buf(sbuf);
     return TT_SUCCESS;

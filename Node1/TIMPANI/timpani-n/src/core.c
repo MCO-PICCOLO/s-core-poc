@@ -544,11 +544,34 @@ tt_error_t epoll_loop(struct context *ctx)
             if (read(poll_tfd, &expirations, sizeof(expirations)) < 0)
                 continue;
 
+            TT_LOG_DEBUG("[epoll_loop] schedule poll tick fired");
+
             struct sched_info new_sinfo;
-            if (poll_sched_info(ctx, &new_sinfo) == TT_SUCCESS) {
-                reapply_affinities(ctx, &new_sinfo);
-                destroy_task_info_list(new_sinfo.tasks);
+            tt_error_t poll_ret = poll_sched_info(ctx, &new_sinfo);
+            if (poll_ret != TT_SUCCESS) {
+                /* Log the failure so we know if timpani-o is unreachable */
+                TT_LOG_WARNING("[epoll_loop] poll_sched_info failed (err=%d) – "
+                               "skipping this tick", poll_ret);
+                continue;
             }
+
+            TT_LOG_DEBUG("[epoll_loop] poll_sched_info OK, workload_id='%s' "
+                         "(existing hp_manager workload='%s')",
+                         new_sinfo.workload_id, ctx->hp_manager.workload_id);
+
+            // Refresh CPU affinity for tasks already tracked in tt_list.
+            // This handles the case where timpani-o updates the affinity
+            // of an existing workload's tasks at runtime.
+            reapply_affinities(ctx, &new_sinfo);
+
+            // Detect tasks from a new (second) workload that were not
+            // present in tt_list at start-up.  For each such task the
+            // process is resolved, affinity / scheduling attributes are
+            // applied, and its pidfd is added to epoll so termination is
+            // handled consistently with tasks registered at start-up.
+            register_new_tasks(ctx, &new_sinfo, efd);
+
+            destroy_task_info_list(new_sinfo.tasks);
             continue;
         }
 
