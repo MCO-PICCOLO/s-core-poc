@@ -71,4 +71,9 @@ message FaultInfo {
   string node_id = 2;
   string task_name = 3;
   FaultType type = 4;
+  // CPU affinity bitmask of the task that missed its deadline (1 << assigned_cpu).
+  // Zero means the CPU is unknown (task not found in the active schedule).
+  uint64 cpu_affinity = 5;
+  // Total number of logical CPUs available on the system (e.g. 4 means CPUs 0-3).
+  uint32 num_cpus = 6;
 }

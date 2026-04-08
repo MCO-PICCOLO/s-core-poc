@@ -11,6 +11,21 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
+
+std::vector<int> GlobalScheduler::parse_cpu_affinity(const std::string& affinity)
+{
+    std::vector<int> cpus;
+    if (affinity.empty() || affinity == "any") return cpus;
+    std::stringstream ss(affinity);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+        try {
+            cpus.push_back(std::stoi(token));
+        } catch (...) {}
+    }
+    return cpus;
+}
 
 GlobalScheduler::GlobalScheduler(std::shared_ptr<NodeConfigManager> node_config_manager)
     : node_config_manager_(node_config_manager)
@@ -156,29 +171,27 @@ void GlobalScheduler::schedule_with_best_fit_decreasing()
         if (!best_node.empty()) {
             task.assigned_node = best_node;
 
-            // Handle CPU affinity
+            // Handle CPU affinity: pick the first available CPU from the allowed set
             if (task.affinity != "any" && !task.affinity.empty()) {
-                try {
-                    int required_cpu = std::stoi(task.affinity);
-                    // Check if the required CPU is available
-                    auto& available_cpus = available_cpus_per_node_[best_node];
-                    auto cpu_it = std::find(available_cpus.begin(),
-                                            available_cpus.end(), required_cpu);
+                auto& available_cpus = available_cpus_per_node_[best_node];
+                std::vector<int> allowed_cpus = parse_cpu_affinity(task.affinity);
+                int best_cpu = -1;
+                for (int cpu : allowed_cpus) {
+                    auto cpu_it = std::find(available_cpus.begin(), available_cpus.end(), cpu);
                     if (cpu_it != available_cpus.end()) {
-                        task.assigned_cpu = required_cpu;
-                        available_cpus.erase(cpu_it);
-                    } else {
-                        // Required CPU not available, use any available CPU
-                        task.assigned_cpu = available_cpus.front();
-                        available_cpus.erase(available_cpus.begin());
-                        TLOG_WARN("    ⚠ CPU ", required_cpu,
-                                  " not available, using CPU ", task.assigned_cpu);
+                        best_cpu = cpu;
+                        break;
                     }
-                } catch (const std::exception&) {
-                    // Invalid affinity format, use any available CPU
-                    task.assigned_cpu = available_cpus_per_node_[best_node].front();
-                    available_cpus_per_node_[best_node].erase(
-                        available_cpus_per_node_[best_node].begin());
+                }
+                if (best_cpu != -1) {
+                    task.assigned_cpu = best_cpu;
+                    available_cpus.erase(std::find(available_cpus.begin(), available_cpus.end(), best_cpu));
+                } else {
+                    // None of the requested CPUs are available; fall back to any free CPU
+                    task.assigned_cpu = available_cpus.front();
+                    available_cpus.erase(available_cpus.begin());
+                    TLOG_WARN("    ⚠ None of CPUs (", task.affinity,
+                              ") available, using CPU ", task.assigned_cpu);
                 }
             } else {
                 // Use any available CPU
@@ -284,7 +297,16 @@ void GlobalScheduler::generate_schedules()
                 sched_task.period_ns = task.period_us * 1000;      // Convert to nanoseconds
                 sched_task.runtime_ns = task.runtime_us * 1000;    // Convert to nanoseconds
                 sched_task.deadline_ns = task.deadline_us * 1000;  // Convert to nanoseconds
-                sched_task.cpu_affinity = 1ULL << task.assigned_cpu;
+                // Forward the original multi-bit affinity mask received from gRPC so
+                // that timpani-n can honour all specified CPUs.  Fall back to a
+                // single-CPU mask when no specific affinity was requested.
+                if (task.cpu_affinity > 0 &&
+                    static_cast<uint32_t>(task.cpu_affinity) != 0xFFFFFFFFu) {
+                    sched_task.cpu_affinity = static_cast<uint64_t>(
+                        static_cast<uint32_t>(task.cpu_affinity));
+                } else {
+                    sched_task.cpu_affinity = 1ULL << task.assigned_cpu;
+                }
                 sched_task.sched_policy = task.policy;             // Default to FIFO
                 sched_task.sched_priority = task.priority;
                 sched_task.release_time = task.release_time; // Release time in microseconds
@@ -321,15 +343,16 @@ bool GlobalScheduler::is_task_schedulable_on_node(const Task& task, const std::s
         return false;
     }
 
-    // Check CPU affinity
+    // Check CPU affinity: schedulable if ANY of the allowed CPUs is available
     if (task.affinity != "any" && !task.affinity.empty()) {
-        try {
-            int required_cpu = std::stoi(task.affinity);
-            const auto& available_cpus = available_cpus_per_node_.at(node_id);
-            return std::find(available_cpus.begin(), available_cpus.end(), required_cpu) != available_cpus.end();
-        } catch (const std::exception&) {
-            // Invalid affinity format, treat as "any"
+        const auto& available_cpus = available_cpus_per_node_.at(node_id);
+        std::vector<int> allowed_cpus = parse_cpu_affinity(task.affinity);
+        for (int cpu : allowed_cpus) {
+            if (std::find(available_cpus.begin(), available_cpus.end(), cpu) != available_cpus.end()) {
+                return true;
+            }
         }
+        return false;
     }
 
     return true;
@@ -556,27 +579,32 @@ int GlobalScheduler::find_best_cpu_for_task(const Task& task, const std::string&
     double task_utilization = (task.period_us > 0) ?
                               (double)task.runtime_us / task.period_us : 0.0;
 
-    // Rule 2: If task has specific CPU affinity, prioritize it
+    // Rule 2: If task has specific CPU affinity, find the best CPU among the allowed set
     if (task.affinity != "any" && !task.affinity.empty()) {
-        try {
-            int required_cpu = std::stoi(task.affinity);
+        std::vector<int> allowed_cpus = parse_cpu_affinity(task.affinity);
+        int best_allowed_cpu = -1;
+        double best_util = CPU_UTILIZATION_THRESHOLD + 1.0;
 
-            // Check if required CPU is available in target node
+        for (int required_cpu : allowed_cpus) {
             auto cpu_it = std::find(available_cpus.begin(), available_cpus.end(), required_cpu);
             if (cpu_it != available_cpus.end()) {
-                // Check utilization threshold
                 double current_util = calculate_cpu_utilization(node_id, required_cpu);
-                if (current_util + task_utilization <= CPU_UTILIZATION_THRESHOLD) {
-                    TLOG_DEBUG("Using specific CPU affinity ", required_cpu, " for task ", task.name);
-                    return required_cpu;
-                } else {
-                    TLOG_WARN("Required CPU ", required_cpu, " would exceed utilization threshold");
+                if (current_util + task_utilization <= CPU_UTILIZATION_THRESHOLD &&
+                    current_util < best_util) {
+                    best_util = current_util;
+                    best_allowed_cpu = required_cpu;
                 }
             } else {
                 TLOG_WARN("Required CPU ", required_cpu, " not available in node ", node_id);
             }
-        } catch (const std::exception&) {
-            TLOG_WARN("Invalid CPU affinity format: ", task.affinity, ", treating as 'any'");
+        }
+
+        if (best_allowed_cpu != -1) {
+            TLOG_DEBUG("Using specific CPU affinity ", best_allowed_cpu, " for task ", task.name);
+            return best_allowed_cpu;
+        } else if (!allowed_cpus.empty()) {
+            TLOG_WARN("None of CPUs (", task.affinity, ") available/within threshold for task ",
+                      task.name, ", falling back to 'any'");
         }
     }
 

@@ -46,7 +46,9 @@ class FaultServiceClient
     bool NotifyFault(const std::string &workload_id,
                      const std::string &node_id,
                      const std::string &task_name,
-                     FaultType fault_type);
+                     FaultType fault_type,
+                     uint64_t cpu_affinity = 0,
+                     uint32_t num_cpus = 0);
 
   private:
     FaultServiceClient();

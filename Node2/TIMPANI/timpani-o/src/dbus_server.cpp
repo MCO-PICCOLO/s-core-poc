@@ -21,8 +21,7 @@ DBusServer::DBusServer()
       event_thread_(nullptr),
       server_fd_(-1),
       running_(false),
-      sched_info_server_(nullptr),
-      sched_info_buf_(nullptr)
+      sched_info_server_(nullptr)
 {
 }
 
@@ -113,72 +112,91 @@ void DBusServer::EventLoop()
     }
 }
 
-bool DBusServer::SerializeSchedInfo(const SchedInfoMap& map)
+bool DBusServer::SerializeSchedInfo(const SchedInfoMap& map, const std::string& node_name)
 {
     std::lock_guard<std::mutex> lock(sched_info_buf_mutex_);
 
-    // Return true if buffer is already allocated
-    if (sched_info_buf_) return true;
-
-    // Currently only serialize the first workload in schedule info
-    // TODO: Support multiple workloads by selecting appropriate workload
-    const auto& node_sched_info = map.begin()->second;
-    const std::string& workload_id = map.begin()->first;
-
-    // Get hyperperiod information for this workload
-    DBusServer& instance = GetInstance();
-    const HyperperiodInfo* hyperperiod_info = nullptr;
-    if (instance.sched_info_server_) {
-        hyperperiod_info = instance.sched_info_server_->GetHyperperiodInfo(workload_id);
+    // Return true if a buffer for this node is already cached.
+    if (sched_info_buf_per_node_.count(node_name) &&
+        sched_info_buf_per_node_.at(node_name) != nullptr) {
+        return true;
     }
 
-    // Allocate serial buffer and pack schedule info into it
-    sched_info_buf_ = new_serial_buf(1024 + 256); // Extra space for hyperperiod
-    if (!sched_info_buf_) {
+    // Collect ALL tasks from ALL workloads that have tasks on this node.
+    // Each workload contributes its own tasks independently.
+    struct TaskEntry {
+        const sched_task_t* task;
+        std::string workload_id;
+    };
+    std::vector<TaskEntry> all_tasks;
+    uint64_t max_hyperperiod_us = 0;
+    std::string last_workload_id; // used as the schedule label
+
+    for (const auto& wl_entry : map) {
+        const std::string& wl_id = wl_entry.first;
+        const auto& node_sched_map = wl_entry.second;
+        auto node_it = node_sched_map.find(node_name);
+        if (node_it == node_sched_map.end()) continue;
+
+        const sched_info_t& si = node_it->second;
+        for (int i = 0; i < si.num_tasks; i++) {
+            all_tasks.push_back({&si.tasks[i], wl_id});
+        }
+
+        // Track the largest hyperperiod across all workloads for this node.
+        if (sched_info_server_) {
+            const HyperperiodInfo* hp = sched_info_server_->GetHyperperiodInfo(wl_id);
+            if (hp && hp->hyperperiod_us > max_hyperperiod_us) {
+                max_hyperperiod_us = hp->hyperperiod_us;
+            }
+        }
+        last_workload_id = wl_id;
+    }
+
+    if (all_tasks.empty()) {
+        TLOG_WARN("SerializeSchedInfo: no workload has tasks for node '", node_name, "'");
+        return false;
+    }
+
+    TLOG_DEBUG("SerializeSchedInfo: serializing ", all_tasks.size(),
+               " tasks from ", map.size(), " workload(s) for node '", node_name, "'");
+
+    // Allocate serial buffer sized per task.
+    serial_buf_t* buf = new_serial_buf(256 + 128 * static_cast<int>(all_tasks.size()));
+    if (!buf) {
         TLOG_ERROR("Failed to allocate memory for schedule info buffer");
         return false;
     }
 
-    // First serialize hyperperiod information if available
-    uint64_t hyperperiod_us = 0;
-    if (hyperperiod_info) {
-        hyperperiod_us = hyperperiod_info->hyperperiod_us;
-        TLOG_DEBUG("Including hyperperiod ", hyperperiod_us, " us for workload ", workload_id);
+    if (max_hyperperiod_us > 0) {
+        TLOG_DEBUG("Using combined hyperperiod ", max_hyperperiod_us, " us for node '", node_name, "'");
     }
-    serialize_int64_t(sched_info_buf_, hyperperiod_us);
-    serialize_str(sched_info_buf_, workload_id.substr(0, 64 - 1).c_str());
+    serialize_int64_t(buf, max_hyperperiod_us);
+    serialize_str(buf, last_workload_id.substr(0, 64 - 1).c_str());
 
-    int nr_tasks = 0;
-    for (const auto& sinfo : node_sched_info) {
-        // Serialize each node's schedule info
-        const std::string& node_id = sinfo.first;
-        const sched_info_t& sched_info = sinfo.second;
-
-        // NOTE: This buffer format only works with Timpani-N v2.0
-        for (int i = 0; i < sched_info.num_tasks; i++) {
-            const sched_task_t& task = sched_info.tasks[i];
-            // Ensure reverse order from deserialization in Timpani-N
-            std::string task_name = task.task_name;
-            serialize_str(sched_info_buf_,
-                          task_name.substr(0, 16 - 1).c_str());
-            serialize_int32_t(sched_info_buf_, task.sched_priority);
-            serialize_int32_t(sched_info_buf_, task.sched_policy);
-            serialize_int32_t(sched_info_buf_, task.period_ns / kNsToUs);
-            serialize_int32_t(sched_info_buf_, task.release_time);
-            serialize_int32_t(sched_info_buf_, task.runtime_ns / kNsToUs);
-            serialize_int32_t(sched_info_buf_, task.deadline_ns / kNsToUs);
-            serialize_int64_t(sched_info_buf_, task.cpu_affinity);
-            serialize_int32_t(sched_info_buf_, task.max_dmiss);
-            std::string task_assigned_node = task.assigned_node;
-            serialize_str(sched_info_buf_,
-                        task_assigned_node.substr(0, 64 - 1).c_str());
-        }
-        nr_tasks += sched_info.num_tasks;
+    for (const auto& entry : all_tasks) {
+        const sched_task_t& task = *entry.task;
+        std::string task_name = task.task_name;
+        serialize_str(buf, task_name.substr(0, 16 - 1).c_str());
+        serialize_int32_t(buf, task.sched_priority);
+        serialize_int32_t(buf, task.sched_policy);
+        serialize_int32_t(buf, task.period_ns / kNsToUs);
+        serialize_int32_t(buf, task.release_time);
+        serialize_int32_t(buf, task.runtime_ns / kNsToUs);
+        serialize_int32_t(buf, task.deadline_ns / kNsToUs);
+        serialize_int64_t(buf, task.cpu_affinity);
+        serialize_int32_t(buf, task.max_dmiss);
+        std::string task_assigned_node = task.assigned_node;
+        serialize_str(buf, task_assigned_node.substr(0, 64 - 1).c_str());
+        TLOG_DEBUG("  Task '", task_name, "' (workload: ", entry.workload_id,
+                   ", cpu_affinity: 0x", std::hex, task.cpu_affinity, std::dec, ")");
     }
-    serialize_int32_t(sched_info_buf_, nr_tasks);
+    serialize_int32_t(buf, static_cast<int>(all_tasks.size()));
 
-    TLOG_DEBUG("Serialized sched_info_buf_: ", sched_info_buf_->pos, " bytes with hyperperiod ", hyperperiod_us, " us");
+    TLOG_DEBUG("Serialized ", all_tasks.size(), " total tasks (", buf->pos,
+               " bytes, hyperperiod ", max_hyperperiod_us, " us) for node '", node_name, "'");
 
+    sched_info_buf_per_node_[node_name] = buf;
     return true;
 }
 
@@ -187,10 +205,13 @@ bool DBusServer::SerializeSchedInfo(const SchedInfoMap& map)
 void DBusServer::FreeSchedInfoBuf()
 {
     std::lock_guard<std::mutex> lock(sched_info_buf_mutex_);
-    if (sched_info_buf_) {
-        free_serial_buf(sched_info_buf_);
-        sched_info_buf_ = nullptr;
+    for (auto& entry : sched_info_buf_per_node_) {
+        if (entry.second) {
+            free_serial_buf(entry.second);
+            entry.second = nullptr;
+        }
     }
+    sched_info_buf_per_node_.clear();
 }
 
 void DBusServer::RegisterCallback(const char* name)
@@ -215,11 +236,12 @@ void DBusServer::SchedInfoCallback(const char* name, void** buf,
         }
 
         if (!sched_info_map.empty() &&
-            instance.SerializeSchedInfo(sched_info_map)) {
+            instance.SerializeSchedInfo(sched_info_map, std::string(name))) {
             std::lock_guard<std::mutex> lock(instance.sched_info_buf_mutex_);
-            if (instance.sched_info_buf_) {
-                *buf = instance.sched_info_buf_->data;
-                *bufsize = instance.sched_info_buf_->pos;
+            auto it = instance.sched_info_buf_per_node_.find(name);
+            if (it != instance.sched_info_buf_per_node_.end() && it->second) {
+                *buf = it->second->data;
+                *bufsize = it->second->pos;
                 return;
             }
         }
@@ -237,6 +259,7 @@ void DBusServer::DMissCallback(const char* name, const char* task)
     TLOG_INFO("DMissCallback with name: ", name, ", task: ", task);
 
     std::string workload_id;
+    uint64_t task_cpu_affinity = 0;
 
     DBusServer& instance = GetInstance();
     if (instance.sched_info_server_) {
@@ -260,6 +283,7 @@ void DBusServer::DMissCallback(const char* name, const char* task)
                         for (int i = 0; i < sched_info.num_tasks; i++) {
                             if (std::string(sched_info.tasks[i].task_name) == task) {
                                 workload_id = wl_id;
+                                task_cpu_affinity = sched_info.tasks[i].cpu_affinity;
                                 found = true;
                                 break;
                             }
@@ -271,17 +295,29 @@ void DBusServer::DMissCallback(const char* name, const char* task)
             }
 
             if (!found) {
-                TLOG_WARN("Could not find task '", task, "' on node '", name, "' in any workload");
-                // Currently only references the first workload as fallback
-                // TODO: Support workload selection based on task context
-                workload_id = map.begin()->first;
+                TLOG_WARN("Could not find task '", task, "' on node '", name, "' in any workload — skipping fault notification");
+                return;
             }
         }
     }
 
     FaultServiceClient& client = FaultServiceClient::GetInstance();
 
-    if (!client.NotifyFault(workload_id, name, task, FaultType::DMISS)) {
+    // Use the available_cpus list from node configuration (passed in at startup)
+    // so num_cpus reflects what was configured for this node, not the OS view.
+    uint32_t num_cpus = 4; // fallback default
+    if (instance.sched_info_server_) {
+        auto node_cfg_mgr = instance.sched_info_server_->GetNodeConfigManager();
+        if (node_cfg_mgr) {
+            auto cpus = node_cfg_mgr->GetAvailableCpus(name);
+            if (!cpus.empty()) {
+                num_cpus = static_cast<uint32_t>(cpus.size());
+                TLOG_DEBUG("Node '", name, "' has ", num_cpus, " available CPUs from config");
+            }
+        }
+    }
+
+    if (!client.NotifyFault(workload_id, name, task, FaultType::DMISS, task_cpu_affinity, num_cpus)) {
         TLOG_WARN("NotifyFault failed for ", workload_id,
                   " on node ", name, " for task ", task);
     }

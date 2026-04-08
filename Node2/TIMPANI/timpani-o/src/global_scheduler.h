@@ -99,6 +99,10 @@ private:
     // New helper functions for target node scheduling
     int find_best_cpu_for_task(const Task& task, const std::string& node_id);
     std::vector<int> get_sorted_cpus_by_utilization(const std::string& node_id, bool prefer_high_utilization = true);
+
+    // Parse a comma-separated CPU affinity string (e.g. "2,3") into a list of CPU IDs.
+    // Returns an empty vector for "any" or empty strings.
+    static std::vector<int> parse_cpu_affinity(const std::string& affinity);
     bool assign_task_to_node_cpu(Task& task, const std::string& node_id, int cpu_id);
 
     // Algorithm helper functions (legacy)
