@@ -568,7 +568,6 @@ sudo chrt -f 51 ./stress_app_cpus.sh sea_app 60 98
 # 4. Verify reschedule (after ~10-20 seconds)
 taskset -c -p $(pgrep -x sea_app)
 ```
-
 ---
 
 | Symptom | Likely Cause | Fix |
@@ -582,3 +581,166 @@ taskset -c -p $(pgrep -x sea_app)
 
 ---
 
+## Multi-Workload Support and Testing
+
+Timpani-n supports running **multiple independent workloads simultaneously**, each with its own container, real-time schedule, and deadline monitoring. The `setup_node2.sh` script builds both `sea_app` and `sea_app2` container images so this scenario is ready to test out of the box.
+
+### Overview
+
+| Workload | Container | Process | Schedule | CPU (initial) |
+|---|---|---|---|---|
+| `sea-schedule` | `sea-app` | `sea_app` | `safe-exit-assist.yaml` | CPU 1 |
+| `sea-schedule2` | `sea-app2` | `sea_app2` | `safe-exit-assist2.yaml` | CPU 3 |
+
+Each workload is tracked independently by timpani-n — deadline misses for one workload do not affect the other.
+
+### Step 1 — Build sea_app2 Container Image
+
+The automated setup script builds both images. If you need to build `sea_app2` manually:
+
+```bash
+cd ~/s-core-poc/Node2/sea_app2
+cargo build --release
+sudo podman build -t sdv.lge.com/demo/sea_app2:1.0 .
+
+# Verify
+sudo podman images | grep sea_app2
+```
+
+**Expected output:**
+```
+sdv.lge.com/demo/sea_app2  1.0  <image-id>  <size>  <time>
+```
+
+### Step 2 — Deploy the First Workload (sea-app)
+
+Update the node name in `safe-exit-assist.yaml` and deploy as described in the single-workload demo:
+
+```bash
+cd ~/s-core-poc/Node2/examples/resources
+
+# Set this node's hostname in the manifest
+HOSTNAME=$(hostname)
+sed -i "s/node: .*/node: $HOSTNAME/" safe-exit-assist.yaml
+
+cd ~/s-core-poc/Node2/examples
+
+# Ensure timpani.sh points to safe-exit-assist.yaml (it does by default)
+# BODY=$(< ./resources/safe-exit-assist.yaml)   ← active line in timpani.sh
+
+bash timpani.sh
+```
+
+Verify `sea-app` is running:
+
+```bash
+sudo podman ps | grep sea-app
+taskset -c -p $(pgrep -x sea_app)
+# Expected: pid <pid>'s current affinity list: 1
+```
+
+### Step 3 — Deploy the Second Workload (sea-app2)
+
+#### 3a — Update the node name in safe-exit-assist2.yaml
+
+```bash
+cd ~/s-core-poc/Node2/examples/resources
+
+HOSTNAME=$(hostname)
+sed -i "s/node: .*/node: $HOSTNAME/" safe-exit-assist2.yaml
+
+# Verify
+grep "node:" safe-exit-assist2.yaml
+```
+
+#### 3b — Switch timpani.sh to use the second manifest
+
+Edit `timpani.sh` and swap the active `BODY` line:
+
+```bash
+cd ~/s-core-poc/Node2/examples
+nano timpani.sh   # or vi timpani.sh
+```
+
+Change:
+```bash
+BODY=$(< ./resources/safe-exit-assist.yaml)
+#BODY=$(< ./resources/safe-exit-assist2.yaml)
+```
+
+To:
+```bash
+#BODY=$(< ./resources/safe-exit-assist.yaml)
+BODY=$(< ./resources/safe-exit-assist2.yaml)
+```
+
+#### 3c — Deploy the second workload
+
+```bash
+cd ~/s-core-poc/Node2/examples
+bash timpani.sh
+```
+
+**Expected response:** `OK` from API server
+
+### Step 4 — Verify Both Containers Are Running
+
+```bash
+# Both containers should appear
+sudo podman ps | grep sea-app
+
+# Check CPU affinity of each process independently
+taskset -c -p $(pgrep -x sea_app)
+# Expected: pid <pid>'s current affinity list: 1
+
+taskset -c -p $(pgrep -x sea_app2)
+# Expected: pid <pid>'s current affinity list: 3
+```
+
+Each process runs on its own dedicated CPU core as assigned by its schedule.
+
+### Step 5 — Trigger Deadline Miss on Each Workload Independently
+
+You can stress each workload independently to verify isolation:
+
+```bash
+cd ~/s-core-poc/Node2/TIMPANI/timpani-n/tools
+
+# Stress sea_app (workload 1) only
+sudo chrt -f 51 ./stress_app_cpus.sh sea_app 30 98
+
+# Stress sea_app2 (workload 2) only
+sudo chrt -f 51 ./stress_app_cpus.sh sea_app2 30 98
+```
+
+Timpani-n logs will show deadline misses attributed to the correct workload and task — misses from `sea_app2` will not appear under `sea-schedule`, and vice versa:
+
+```
+[ERROR] !!! DEADLINE MISS sea_app(PID): deadline miss reported for workload 'sea-schedule'
+[ERROR] !!! DEADLINE MISS sea_app2(PID): deadline miss reported for workload 'sea-schedule2'
+```
+
+### Step 6 — Verify Reschedule for Each Workload
+
+After the stress run ends, check that each process recovered to its rescheduled affinity:
+
+```bash
+# Verify sea_app recovered
+taskset -c -p $(pgrep -x sea_app)
+# Expected (after reschedule): pid <pid>'s current affinity list: 1,2
+
+# Verify sea_app2 recovered
+taskset -c -p $(pgrep -x sea_app2)
+# Expected (after reschedule): pid <pid>'s current affinity list: 2,3
+```
+
+### Cleanup for Multi-Workload Run
+
+Before restarting, remove both containers:
+
+```bash
+sudo podman stop sea-app sea-app2 2>/dev/null || true
+sudo podman rm -f sea-app sea-app2 2>/dev/null || true
+```
+
+---
