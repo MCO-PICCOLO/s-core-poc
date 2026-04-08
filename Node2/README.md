@@ -64,46 +64,8 @@ sudo apt install -y libsystemd-dev
 ```
 
 ---
-
-## Setup Steps
-
-You have two options: **Automated** or **Manual** setup.
-
-### Option A: Automated Setup (Recommended)
-
-Use the provided script to automatically build all components:
-
-```bash
-# Navigate to scripts directory
-cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
-
-# Make script executable
-chmod +x setup_node2.sh
-
-# Run system setup (installs prerequisites and builds all binaries)
-sudo ./setup_node2.sh
-```
-
-**What this does:**
-- Creates `/opt/pullpiri/` directory structure
-- Builds NodeAgent binary (~100MB)
-- Builds Timpani-n binary
-- Builds sea-app container image
-- Creates WORKSPACE file
-
-**Duration:** ~10-15 minutes (depending on system and whether packages are cached)
-
-After running the automated script, proceed to:
-- **Step 1**: Configure `/etc/piccolo/nodeagent.yaml`
-- **Step 2**: Update `pullpiri_lm_config.json`
-- **Step 7**: Clean existing containers (for subsequent runs)
-
-### Option B: Manual Setup
-
-Follow Steps 1-6 below for manual installation and build process.
-
----
-
+### Node 2 - Setup & Launch 
+--
 ### Step 1 — Configure NodeAgent
 
 Create the NodeAgent configuration file with your Node 1 (Master) and Node 2 (Worker) IP addresses:
@@ -179,7 +141,50 @@ vi pullpiri_lm_config.json
 
 Replace `<NODE1_IP>` with Node 1's actual IP address (e.g., `10.221.40.153`).
 
-### Step 3 — Build NodeAgent Binary
+---
+
+## Setup Steps
+
+You have two options: **Automated** or **Manual** setup.
+
+### Option A: Automated Setup (Recommended)
+
+Use the provided script to automatically build all components:
+
+```bash
+# Navigate to scripts directory
+cd ~/s-core-poc/Node2/lifecycle/examples/pullpiri_LM
+
+# Make script executable
+chmod +x setup_node2.sh
+
+# Run system setup (installs prerequisites and builds all binaries)
+sudo ./setup_node2.sh
+```
+
+**What this does:**
+- Creates `/opt/pullpiri/` directory structure
+- Builds NodeAgent binary (~100MB)
+- Builds Timpani-n binary
+- Builds sea-app container image
+- Creates WORKSPACE file
+
+**Duration:** ~10-15 minutes (depending on system and whether packages are cached)
+
+After running the automated script, proceed to:
+- **Step 1**: Configure `/etc/piccolo/nodeagent.yaml`
+- **Step 2**: Update `pullpiri_lm_config.json`
+- **Step 7**: Clean existing containers (for subsequent runs)
+
+### Option B: Manual Setup
+
+Follow Steps 1-4 below for manual installation and build process.
+
+---
+
+
+
+### Step 1 — Build NodeAgent Binary
 
 > **Important:** The `nodeagent` binary is around 100MB and cannot be uploaded to GitHub, so it **must be built locally** on Node 2.
 
@@ -209,7 +214,7 @@ ls -lh /opt/pullpiri/bin/nodeagent
 -rwxr-xr-x 1 root root 100M ... /opt/pullpiri/bin/nodeagent
 ```
 
-### Step 4 — Build Timpani-n
+### Step 2 — Build Timpani-n
 
 ```bash
 # Navigate to TIMPANI directory
@@ -238,7 +243,7 @@ sudo chmod +x /opt/pullpiri/bin/* || true
 ls -lh /opt/pullpiri/bin/timpani-n
 ```
 
-### Step 5 — Build sea-app Container
+### Step 3 — Build sea-app Container
 
 The `sea-app` is a Safe Exit Assist application that will be deployed as a container workload:
 
@@ -262,7 +267,7 @@ sdv.lge.com/demo/sea_app  1.0  <image-id>  <size>  <time>
 ```
 
 
-### Step 6 — Clean Existing Containers (Before Each Run)
+### Step 4 — Clean Existing Containers (Before Each Run)
 
 > **Note:** On the first run, there won't be any existing containers. This step is needed for subsequent runs.
 
