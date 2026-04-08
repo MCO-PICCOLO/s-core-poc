@@ -46,7 +46,8 @@ bool FaultServiceClient::NotifyFault(const std::string &workload_id,
                                      const std::string &task_name,
                                      FaultType fault_type,
                                      uint64_t cpu_affinity,
-                                     uint32_t num_cpus)
+                                     uint32_t num_cpus,
+                                     uint64_t available_cpu_mask)
 {
     if (!initialized_) {
         TLOG_ERROR("FaultServiceClient not initialized");
@@ -60,6 +61,7 @@ bool FaultServiceClient::NotifyFault(const std::string &workload_id,
     request.set_type(fault_type);
     request.set_cpu_affinity(cpu_affinity);
     request.set_num_cpus(num_cpus);
+    request.set_available_cpu_mask(available_cpu_mask);
 
     Response reply;
     ClientContext context;
@@ -68,7 +70,8 @@ bool FaultServiceClient::NotifyFault(const std::string &workload_id,
               ", Node: ", node_id, ", Task: ", task_name,
               ", Fault Type: ", FaultTypeToStr(fault_type),
               ", CPU affinity: ", cpu_affinity,
-              ", num_cpus: ", num_cpus);
+              ", num_cpus: ", num_cpus,
+              ", available_cpu_mask: 0x", std::hex, available_cpu_mask, std::dec);
 
     Status status = stub_->NotifyFault(&context, request, &reply);
 

@@ -76,4 +76,7 @@ message FaultInfo {
   uint64 cpu_affinity = 5;
   // Total number of logical CPUs available on the system (e.g. 4 means CPUs 0-3).
   uint32 num_cpus = 6;
+  // Bitmask of the actual available CPU indices on the node (e.g. CPUs {0,3,4,6} → 0x59).
+  // Use this instead of num_cpus to know the real CPU pool when picking a new affinity.
+  uint64 available_cpu_mask = 7;
 }

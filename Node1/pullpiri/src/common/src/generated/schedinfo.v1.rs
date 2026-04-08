@@ -67,6 +67,10 @@ pub struct FaultInfo {
     /// Total number of CPUs available on the system (e.g. 4 means CPUs 0-3).
     #[prost(uint32, tag = "6")]
     pub num_cpus: u32,
+    /// Bitmask of the actual available CPU indices on the node (e.g. CPUs {0,3,4,6} → 0x59).
+    /// Use this instead of num_cpus to know the real CPU pool when picking a new affinity.
+    #[prost(uint64, tag = "7")]
+    pub available_cpu_mask: u64,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]

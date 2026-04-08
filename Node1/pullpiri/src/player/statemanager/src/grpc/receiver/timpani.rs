@@ -53,27 +53,26 @@ fn combinations(pool: &[u32], k: usize) -> Vec<Vec<u32>> {
 }
 
 /// Pick a new CPU-affinity bitmask with the **same number of CPUs** as
-/// `fault_cpu_mask` but a different combination.
+/// `fault_cpu_mask` but a different combination, chosen from `available_cpu_mask`.
 ///
-/// Example: `fault_cpu_mask = 0b110` (CPUs 1,2, count=2), `num_cpus = 4`
-/// → candidates include {0,1},{0,2},{0,3},{1,3},{2,3} (5 combos of size 2
-///   from 4 CPUs, minus the faulting {1,2}) → one is chosen at random.
+/// `available_cpu_mask` encodes the exact CPU indices available on the node
+/// (e.g. CPUs {0,3,4,6} → 0x59).  The pool is built from the set bits of this
+/// mask so the result is always a valid index on the real hardware.
 ///
-/// When `fault_cpu_mask == 0` (task has no current CPU pinning), defaults to
-/// assigning 2 CPUs so the rescheduled task gets wider CPU access.
-///
+/// When `fault_cpu_mask == 0` picks 1 CPU from the available pool.
 /// Falls back to `fault_cpu_mask` when no alternative combination exists.
-fn pick_new_cpu_set(num_cpus: u32, fault_cpu_mask: u64) -> u64 {
-    if num_cpus == 0 {
+fn pick_new_cpu_set(available_cpu_mask: u64, fault_cpu_mask: u64) -> u64 {
+    // Build pool from actual available CPU indices.
+    let pool: Vec<u32> = cpu_bits(available_cpu_mask);
+    if pool.is_empty() {
         return fault_cpu_mask;
     }
-    // When the task has no current CPU pinning (mask == 0), assign 1 CPU.
+    // Preserve the same count of CPUs as the faulting affinity (min 1).
     let n_assigned = if fault_cpu_mask == 0 {
         1
     } else {
         fault_cpu_mask.count_ones() as usize
     };
-    let pool: Vec<u32> = (0..num_cpus).collect();
     let candidates: Vec<u64> = combinations(&pool, n_assigned)
         .into_iter()
         .map(|combo| combo.iter().fold(0u64, |acc, &c| acc | (1u64 << c)))
@@ -227,6 +226,14 @@ impl FaultService for TimpaniReceiver {
             // Timpani-O populates num_cpus; default to 4 if the field is absent/zero.
             let num_cpus = if info.num_cpus == 0 { 4 } else { info.num_cpus };
 
+            // Bitmask of available CPU indices on the node (e.g. {0,3,4,6} → 0x59).
+            // Fall back to a contiguous mask of num_cpus when not provided.
+            let available_cpu_mask = if info.available_cpu_mask == 0 {
+                (1u64 << num_cpus) - 1
+            } else {
+                info.available_cpu_mask
+            };
+
             // ── Guard: act only when the faulting CPU has changed ────────────────
             // Use base_id as the map key so the same workload is always deduped
             // regardless of how many "-schedule" suffixes arrived in workload_id.
@@ -250,13 +257,13 @@ impl FaultService for TimpaniReceiver {
             }
 
             // ── Choose a new CPU set (same count, different combination) ─────
-            let new_cpu_affinity = pick_new_cpu_set(num_cpus, fault_cpu);
+            let new_cpu_affinity = pick_new_cpu_set(available_cpu_mask, fault_cpu);
 
             println!(
                 "[{}] DMISS cpu_affinity=0x{:x} (CPUs {:?}, count={}), \
-                 rescheduling to 0x{:x} (CPUs {:?}), num_cpus={}",
+                 rescheduling to 0x{:x} (CPUs {:?}), available=0x{:x}",
                 base_id, fault_cpu, cpu_bits(fault_cpu), fault_cpu.count_ones(),
-                new_cpu_affinity, cpu_bits(new_cpu_affinity), num_cpus
+                new_cpu_affinity, cpu_bits(new_cpu_affinity), available_cpu_mask
             );
 
             // ── Spawn async task ────────────────────────────────────────────────

@@ -303,21 +303,29 @@ void DBusServer::DMissCallback(const char* name, const char* task)
 
     FaultServiceClient& client = FaultServiceClient::GetInstance();
 
-    // Use the available_cpus list from node configuration (passed in at startup)
-    // so num_cpus reflects what was configured for this node, not the OS view.
+    // Build available_cpu_mask and num_cpus from node configuration.
+    // available_cpu_mask encodes the exact CPU indices as a bitmask
+    // (e.g. CPUs {0,3,4,6} → (1<<0)|(1<<3)|(1<<4)|(1<<6) = 0x59).
     uint32_t num_cpus = 4; // fallback default
+    uint64_t available_cpu_mask = 0xF; // fallback: CPUs 0-3
     if (instance.sched_info_server_) {
         auto node_cfg_mgr = instance.sched_info_server_->GetNodeConfigManager();
         if (node_cfg_mgr) {
             auto cpus = node_cfg_mgr->GetAvailableCpus(name);
             if (!cpus.empty()) {
                 num_cpus = static_cast<uint32_t>(cpus.size());
-                TLOG_DEBUG("Node '", name, "' has ", num_cpus, " available CPUs from config");
+                available_cpu_mask = 0;
+                for (int cpu_idx : cpus) {
+                    available_cpu_mask |= (1ULL << cpu_idx);
+                }
+                TLOG_DEBUG("Node '", name, "' has ", num_cpus,
+                           " available CPUs, mask=0x", std::hex, available_cpu_mask, std::dec);
             }
         }
     }
 
-    if (!client.NotifyFault(workload_id, name, task, FaultType::DMISS, task_cpu_affinity, num_cpus)) {
+    if (!client.NotifyFault(workload_id, name, task, FaultType::DMISS,
+                            task_cpu_affinity, num_cpus, available_cpu_mask)) {
         TLOG_WARN("NotifyFault failed for ", workload_id,
                   " on node ", name, " for task ", task);
     }

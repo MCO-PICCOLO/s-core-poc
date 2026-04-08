@@ -48,7 +48,8 @@ class FaultServiceClient
                      const std::string &task_name,
                      FaultType fault_type,
                      uint64_t cpu_affinity = 0,
-                     uint32_t num_cpus = 0);
+                     uint32_t num_cpus = 0,
+                     uint64_t available_cpu_mask = 0);
 
   private:
     FaultServiceClient();
