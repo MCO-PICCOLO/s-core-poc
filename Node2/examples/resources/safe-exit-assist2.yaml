@@ -35,7 +35,7 @@ metadata:
   label: null
   name: safe-exit-assist2
 spec:
-  schedule: sea-schedule
+  schedule: sea-schedule2
   pattern:
     - type: plain
   models:
@@ -61,9 +61,9 @@ metadata:
 spec:
   hostNetwork: true
   containers:
-    - name: sea-app
+    - name: sea-app2
       # TODO: replace with actual registry path once the image is pushed
-      image: sdv.lge.com/demo/sea_app:1.0
+      image: sdv.lge.com/demo/sea_app2:1.0
   terminationGracePeriodSeconds: 0
   restartPolicy: Never
 
@@ -84,12 +84,12 @@ spec:
 apiVersion: v1
 kind: Schedule
 metadata:
-  name: sea-schedule
+  name: sea-schedule2
 spec:
   - name: sea_app2
     priority: 50
     policy: FIFO
-    cpu_affinity: 4   # all CPUs — pin to a specific CPU if needed
+    cpu_affinity: 8   # all CPUs — pin to a specific CPU if needed
     period: 10000            # 10 ms in microseconds (100 Hz)
     release_time: 0
     runtime: 1000           # 1 ms = 2× measured 0.5 ms average latency

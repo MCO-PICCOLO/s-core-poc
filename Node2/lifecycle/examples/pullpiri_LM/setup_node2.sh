@@ -323,12 +323,56 @@ build_sea_app() {
 }
 
 # ============================================================================
-# Section 6: Create WORKSPACE File
+# Section 6: Build sea-app2 Container
+# ============================================================================
+
+build_sea_app2() {
+    log_info "=========================================="
+    log_info "Section 6: Building sea-app2 Container"
+    log_info "=========================================="
+
+    # Detect the sea_app2 directory
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    SEA_APP2_DIR="$( cd "$SCRIPT_DIR/../../../sea_app2" && pwd )"
+
+    if [ ! -d "$SEA_APP2_DIR" ]; then
+        log_error "sea_app2 directory not found at: $SEA_APP2_DIR"
+        log_error "Expected location: s-core-poc/Node2/sea_app2"
+        exit 1
+    fi
+
+    log_info "Found sea_app2 at: $SEA_APP2_DIR"
+
+    # Build the Rust binary
+    log_info "Building sea_app2 Rust binary..."
+    su - $ACTUAL_USER -c "cd '$SEA_APP2_DIR' && source $ACTUAL_HOME/.cargo/env && cargo build --release"
+
+    if [ $? -eq 0 ]; then
+        log_success "Built sea_app2 binary"
+    else
+        log_error "Failed to build sea_app2"
+        exit 1
+    fi
+
+    # Build Podman container image
+    log_info "Building Podman container image..."
+    sudo podman build -t sdv.lge.com/demo/sea_app2:1.0 "$SEA_APP2_DIR"
+
+    if [ $? -eq 0 ]; then
+        log_success "sea-app2 container image built: sdv.lge.com/demo/sea_app2:1.0"
+    else
+        log_error "Failed to build sea-app2 container image"
+        exit 1
+    fi
+}
+
+# ============================================================================
+# Section 7: Create WORKSPACE File
 # ============================================================================
 
 create_workspace() {
     log_info "=========================================="
-    log_info "Section 6: Creating WORKSPACE File"
+    log_info "Section 7: Creating WORKSPACE File"
     log_info "=========================================="
 
     SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -370,6 +414,9 @@ main() {
     build_sea_app
     echo ""
 
+    build_sea_app2
+    echo ""
+
     create_workspace
     echo ""
 
@@ -394,6 +441,7 @@ main() {
     echo ""
     log_info "Verifying container images:"
     sudo podman images | grep sea_app || log_warning "sea-app image not found"
+    sudo podman images | grep sea_app2 || log_warning "sea-app2 image not found"
 
     echo ""
     log_info "Next steps:"

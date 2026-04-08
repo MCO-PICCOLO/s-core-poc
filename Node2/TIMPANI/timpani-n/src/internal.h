@@ -380,6 +380,10 @@ tt_error_t start_hyperperiod_timer(struct context *ctx);
 tt_error_t init_task_list(struct context *ctx);
 void destroy_task_info_list(struct task_info *tasks);
 void reapply_affinities(struct context *ctx, struct sched_info *new_sinfo);
+// Detect tasks in new_sinfo that are not yet in tt_list (e.g. a second
+// workload added after start-up), set up each one, and register its pidfd
+// with the given epoll fd.  Returns the number of newly added tasks.
+int register_new_tasks(struct context *ctx, struct sched_info *new_sinfo, int efd);
 
 // ===== 네트워크 통신 (trpc.c) =====
 tt_error_t init_trpc(struct context *ctx);
