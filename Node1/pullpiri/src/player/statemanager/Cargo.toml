@@ -16,3 +16,5 @@ tokio = "1.43.1"
 tonic = "0.12.3"
 chrono = { version = "0.4.43", features = ["serde"] }
 serde_yaml = "0.9"
+rand = "0.8"
+num_cpus = "1.13"

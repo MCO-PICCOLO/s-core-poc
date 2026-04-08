@@ -45,6 +45,7 @@ class SchedInfoServiceImpl final : public SchedInfoService::Service
                         Response* reply) override;
 
     SchedInfoMap GetSchedInfoMap(bool* changed = nullptr);
+    std::string GetWorkloadForNode(const std::string& node_id) const;
 
     /**
      * @brief Get hyperperiod information for a specific workload
@@ -59,6 +60,12 @@ class SchedInfoServiceImpl final : public SchedInfoService::Service
      */
     const std::map<std::string, HyperperiodInfo>& GetAllHyperperiods() const;
 
+    /**
+     * @brief Get the node configuration manager
+     * @return Shared pointer to NodeConfigManager (may be nullptr)
+     */
+    std::shared_ptr<NodeConfigManager> GetNodeConfigManager() const;
+
   private:
     static int SchedPolicyToInt(SchedPolicy policy);
 
@@ -67,6 +74,10 @@ class SchedInfoServiceImpl final : public SchedInfoService::Service
 
     // Member variable to store scheduling information
     SchedInfoMap sched_info_map_;
+    // Maps each node_id to the workload_id most recently registered for it.
+    // Used by SerializeSchedInfo to pick the correct workload when multiple
+    // workloads have tasks on the same node.
+    std::map<std::string, std::string> node_to_workload_;
     // Use shared_mutex for sched_info_map_
     mutable std::shared_mutex sched_info_mutex_;
     // Flag for DBusServer indicating whether sched_info_map_ has changed
@@ -93,6 +104,7 @@ class SchedInfoServer
     bool Start(int port);
     void Stop();
     SchedInfoMap GetSchedInfoMap(bool* changed = nullptr);
+    std::string GetWorkloadForNode(const std::string& node_id) const;
 
     /**
      * @brief Get hyperperiod information for a specific workload
@@ -108,6 +120,12 @@ class SchedInfoServer
     const std::map<std::string, HyperperiodInfo>& GetAllHyperperiods() const;
 
     void DumpSchedInfo();
+
+    /**
+     * @brief Get the node configuration manager
+     * @return Shared pointer to NodeConfigManager (may be nullptr)
+     */
+    std::shared_ptr<NodeConfigManager> GetNodeConfigManager() const;
 
  private:
     SchedInfoServiceImpl service_;

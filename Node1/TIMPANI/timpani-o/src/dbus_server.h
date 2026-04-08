@@ -9,6 +9,7 @@
 #include <libtrpc.h>
 
 #include <atomic>
+#include <map>
 #include <thread>
 #include <mutex>
 #include <unordered_map>
@@ -49,8 +50,9 @@ class DBusServer
     // Event loop for handling D-Bus messages
     void EventLoop();
 
-    // Serialize scheduling information for libtrpc callbacks
-    bool SerializeSchedInfo(const SchedInfoMap& map);
+    // Serialize scheduling information for libtrpc callbacks.
+    // node_name is the requesting Timpani-N node; only its workload is serialized.
+    bool SerializeSchedInfo(const SchedInfoMap& map, const std::string& node_name);
 
     // Static callbacks for libtrpc
     static void RegisterCallback(const char* name);
@@ -68,9 +70,11 @@ class DBusServer
 
     // SchedInfoServer instance for libtrpc callbacks
     SchedInfoServer* sched_info_server_;
-    // Buffer to store serialized scheduling info for libtrpc callbacks
-    serial_buf_t* sched_info_buf_;
-    // Mutex to protect sched_info_buf_ access
+    // Per-node serialized schedule buffers (keyed by node name).
+    // Each Timpani-N node gets its own buffer so multiple workloads on
+    // different nodes can coexist without overwriting each other.
+    std::map<std::string, serial_buf_t*> sched_info_buf_per_node_;
+    // Mutex to protect sched_info_buf_per_node_ access
     std::mutex sched_info_buf_mutex_;
     // Map to track synchronization status of each node for SyncCallback
     std::unordered_map<std::string, bool> node_sync_map_;

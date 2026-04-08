@@ -174,29 +174,59 @@ pub async fn apply(body: &str) -> common::Result<String> {
 
 /// Delete downloaded artifact to etcd
 ///
-/// ### Parametets
+/// ### Parameters
 /// * `body: &str` - whole yaml string of piccolo artifact
 /// ### Returns
 /// * `Result(String)` - scenario yaml in downloaded artifact
 /// ### Description
-/// Delete scenario yaml only, because other scenario can use a package with same name
+/// Delete every artifact document found in the YAML (Scenario, Package, Model,
+/// Schedule, Volume, Network, Node) from etcd.  Returns the Scenario yaml so
+/// the caller can send a Withdraw action to FilterGateway.
 pub async fn withdraw(body: &str) -> common::Result<String> {
+    // ── OLD IMPLEMENTATION (deleted Scenario only) ────────────────────────
+    // let docs: Vec<&str> = body.split(YAML_SEPARATOR).collect();
+    // for doc in docs {
+    //     let value: serde_yaml::Value = serde_yaml::from_str(doc)?;
+    //     if let Some((kind, name)) = parse_artifact_info(&value) {
+    //         if kind == KIND_SCENARIO {
+    //             let artifact_str = serde_yaml::to_string(&value)?;
+    //             let key = format!("{}/{}", KIND_SCENARIO, name);
+    //             data::delete_at_etcd(&key).await?;
+    //             return Ok(artifact_str);
+    //         }
+    //     }
+    // }
+    // Err("There is not any scenario in yaml string".into())
+    // ── NEW IMPLEMENTATION ────────────────────────────────────────────────
+    // Delete every artifact kind present in the body YAML from etcd, then
+    // return the Scenario document so the caller can notify FilterGateway.
     let docs: Vec<&str> = body.split(YAML_SEPARATOR).collect();
+    let mut scenario_str = String::new();
 
     for doc in docs {
+        let doc = doc.trim();
+        if doc.is_empty() {
+            continue;
+        }
+
         let value: serde_yaml::Value = serde_yaml::from_str(doc)?;
 
         if let Some((kind, name)) = parse_artifact_info(&value) {
+            let key = format!("{}/{}", kind, name);
+            logd!(2, "withdraw: deleting {} from etcd", key);
+            data::delete_at_etcd(&key).await?;
+
             if kind == KIND_SCENARIO {
-                let artifact_str = serde_yaml::to_string(&value)?;
-                let key = format!("{}/{}", KIND_SCENARIO, name);
-                data::delete_at_etcd(&key).await?;
-                return Ok(artifact_str);
+                scenario_str = serde_yaml::to_string(&value)?;
             }
         }
     }
 
-    Err("There is not any scenario in yaml string".into())
+    if scenario_str.is_empty() {
+        Err("There is not any scenario in yaml string".into())
+    } else {
+        Ok(scenario_str)
+    }
 }
 
 /// Load model with optional volume and network resources

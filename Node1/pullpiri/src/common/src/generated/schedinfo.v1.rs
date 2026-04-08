@@ -60,6 +60,13 @@ pub struct FaultInfo {
     pub task_name: ::prost::alloc::string::String,
     #[prost(enumeration = "FaultType", tag = "4")]
     pub r#type: i32,
+    /// CPU affinity bitmask of the task that missed its deadline (1 << assigned_cpu).
+    /// Zero means the CPU is unknown (no matching task found in the active schedule).
+    #[prost(uint64, tag = "5")]
+    pub cpu_affinity: u64,
+    /// Total number of CPUs available on the system (e.g. 4 means CPUs 0-3).
+    #[prost(uint32, tag = "6")]
+    pub num_cpus: u32,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
