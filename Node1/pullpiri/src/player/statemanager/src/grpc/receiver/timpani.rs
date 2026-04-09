@@ -99,6 +99,7 @@ const RESCHEDULE_YAML_PATH: &str =
 ///   Schedule : metadata.name        → `schedule_name`  (= original workload_id)
 ///              spec[0].name         → `task_name`
 ///              spec[0].cpu_affinity → `new_cpu_affinity`
+///              spec[0].node_id      → `node_id`
 ///   Scenario : metadata.name        → `base_id`
 ///              spec.target          → `base_id`
 ///   Package  : metadata.name        → `base_id`
@@ -113,6 +114,7 @@ async fn apply_reschedule_yaml_patched(
     base_id: &str,
     task_name: &str,
     new_cpu_affinity: u64,
+    node_id: &str,
 ) -> Result<String, String> {
     let content = tokio::fs::read_to_string(RESCHEDULE_YAML_PATH)
         .await
@@ -143,6 +145,9 @@ async fn apply_reschedule_yaml_patched(
                         first["name"] = serde_yaml::Value::String(task_name.to_string());
                         first["cpu_affinity"] =
                             serde_yaml::Value::Number(new_cpu_affinity.into());
+                        if !node_id.is_empty() {
+                            first["node_id"] = serde_yaml::Value::String(node_id.to_string());
+                        }
                     }
                 }
             }
@@ -213,6 +218,7 @@ impl FaultService for TimpaniReceiver {
         if info.r#type == FaultType::Dmiss as i32 {
             let workload_id = info.workload_id.clone();
             let task_name   = info.task_name.clone();
+            let node_id     = info.node_id.clone();
 
             // Strip any trailing "-schedule" chain — the action-controller echoes
             // the Schedule name back as workload_id, which would otherwise keep
@@ -234,16 +240,22 @@ impl FaultService for TimpaniReceiver {
                 info.available_cpu_mask
             };
 
+            // Use a per-node key so identical workload names on different nodes
+            // are tracked independently. If node_id is empty, fall back to base_id.
+            let state_key = if node_id.is_empty() {
+                base_id.clone()
+            } else {
+                format!("{}:{}", base_id, node_id)
+            };
+
             // ── Guard: act only when the faulting CPU has changed ────────────────
-            // Use base_id as the map key so the same workload is always deduped
-            // regardless of how many "-schedule" suffixes arrived in workload_id.
             let should_act = {
                 let mut state = workload_last_cpu().lock().await;
-                let last = state.entry(base_id.clone()).or_insert(u64::MAX);
+                let last = state.entry(state_key.clone()).or_insert(u64::MAX);
                 if *last == fault_cpu {
                     println!(
                         "[{}] DMISS on cpu_affinity=0x{:x} — same as last acted CPU, ignoring",
-                        base_id, fault_cpu
+                        state_key, fault_cpu
                     );
                     false
                 } else {
@@ -262,7 +274,7 @@ impl FaultService for TimpaniReceiver {
             println!(
                 "[{}] DMISS cpu_affinity=0x{:x} (CPUs {:?}, count={}), \
                  rescheduling to 0x{:x} (CPUs {:?}), available=0x{:x}",
-                base_id, fault_cpu, cpu_bits(fault_cpu), fault_cpu.count_ones(),
+                state_key, fault_cpu, cpu_bits(fault_cpu), fault_cpu.count_ones(),
                 new_cpu_affinity, cpu_bits(new_cpu_affinity), available_cpu_mask
             );
 
@@ -270,9 +282,11 @@ impl FaultService for TimpaniReceiver {
             let schedule_name = workload_id.clone(); // original key in Timpani-O's map
             let wid = base_id.clone();               // stable name for Scenario/Package
             let task_name_owned = task_name.clone();
+            let node_id_owned = node_id.clone();
+            let state_key_owned = state_key.clone();
             tokio::spawn(async move {
                 let scenario_name = match apply_reschedule_yaml_patched(
-                    &schedule_name, &wid, &task_name_owned, new_cpu_affinity
+                    &schedule_name, &wid, &task_name_owned, new_cpu_affinity, &node_id_owned
                 ).await {
                     Ok(name) => {
                         println!(
@@ -283,7 +297,7 @@ impl FaultService for TimpaniReceiver {
                     }
                     Err(e) => {
                         println!("[{}] Failed to apply reschedule YAML to DB: {}", wid, e);
-                        workload_last_cpu().lock().await.remove(&wid);
+                        workload_last_cpu().lock().await.remove(&state_key_owned);
                         return;
                     }
                 };
@@ -301,7 +315,7 @@ impl FaultService for TimpaniReceiver {
                             wid, scenario_name, e
                         );
                         // Clear so the next fault can retry.
-                        workload_last_cpu().lock().await.remove(&wid);
+                        workload_last_cpu().lock().await.remove(&state_key_owned);
                     }
                 }
             });

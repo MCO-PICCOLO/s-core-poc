@@ -6,6 +6,7 @@
 #include "tlog.h"
 #include "schedinfo_service.h"
 #include "dbus_server.h"
+#include <set>
  
 SchedInfoServiceImpl::SchedInfoServiceImpl(std::shared_ptr<NodeConfigManager> node_config_manager)
     : node_config_manager_(node_config_manager),
@@ -51,27 +52,38 @@ Status SchedInfoServiceImpl::AddSchedInfo(ServerContext* context,
  
     std::unique_lock<std::shared_mutex> lock(sched_info_mutex_);
  
-    // Currently only supports one workload at a time
-    // Replace only this specific workload if it already exists, leaving other workloads intact.
+    // Merge strategy: when the same workload name is re-registered (e.g. from a
+    // different node after a reschedule), only replace the node entries that appear
+    // in the new request.  Nodes that are NOT in the new request are preserved so
+    // that two nodes sharing the same workload name (perf_node + safety_node both
+    // running "sea-schedule") can coexist in sched_info_map_.
     const std::string& incoming_wl = request->workload_id();
+
+    // Collect the set of node_ids present in this incoming request.
+    std::set<std::string> incoming_nodes;
+    for (int i = 0; i < request->tasks_size(); i++) {
+        const std::string& nid = request->tasks(i).node_id();
+        if (!nid.empty()) incoming_nodes.insert(nid);
+    }
+
     if (sched_info_map_.count(incoming_wl)) {
-        TLOG_WARN("Replacing existing workload '", incoming_wl, "' with new workload '", incoming_wl, "'");
- 
-        // Free task arrays allocated for this workload
+        // Free ONLY the node entries that will be replaced by this request.
         auto& old_node_map = sched_info_map_[incoming_wl];
-        for (auto& node_entry : old_node_map) {
-            if (node_entry.second.tasks != nullptr) {
-                free(node_entry.second.tasks);
-                node_entry.second.tasks = nullptr;
+        for (const auto& nid : incoming_nodes) {
+            auto it = old_node_map.find(nid);
+            if (it != old_node_map.end()) {
+                TLOG_INFO("Replacing node entry '", nid, "' in workload '", incoming_wl, "'");
+                if (it->second.tasks != nullptr) {
+                    free(it->second.tasks);
+                    it->second.tasks = nullptr;
+                }
+                old_node_map.erase(it);
             }
         }
-        sched_info_map_.erase(incoming_wl);
-        // Clear hyperperiod information for this workload only
+        // Recalculate hyperperiod for nodes that remain (will be re-added below).
         hyperperiod_manager_->ClearWorkload(incoming_wl);
- 
+
         sched_info_changed_ = true;
-        // Proactively invalidate the cached D-Bus buffer so that a
-        // restarted timpani-n always receives the new schedule.
         DBusServer::GetInstance().FreeSchedInfoBuf();
     }
  
@@ -118,9 +130,12 @@ Status SchedInfoServiceImpl::AddSchedInfo(ServerContext* context,
             }
         }
  
-        // Store in our sched_info_map_ (copy the results)
-        sched_info_map_[request->workload_id()] = node_sched_map;
- 
+        // Merge results: insert/replace only the nodes present in this request,
+        // leaving other nodes for this workload (e.g. on another physical node) intact.
+        for (auto& entry : node_sched_map) {
+            sched_info_map_[request->workload_id()][entry.first] = entry.second;
+        }
+
         reply->set_status(0);  // Success
         return Status::OK;
     }
@@ -195,9 +210,12 @@ Status SchedInfoServiceImpl::AddSchedInfo(ServerContext* context,
         node_to_workload_[node_id] = request->workload_id();
     }
 
-    // Store in our sched_info_map_ (deep-copied results)
-    // sched_info_map_[workload_id] = NodeSchedInfoMap (node_id -> sched_info_t)
-    sched_info_map_[request->workload_id()] = std::move(deep_copy);
+    // Merge deep-copied results: only insert/replace nodes present in this request,
+    // preserving entries for other nodes already in the map (e.g. safety_node survives
+    // when perf_node re-registers the same workload name).
+    for (auto& entry : deep_copy) {
+        sched_info_map_[request->workload_id()][entry.first] = std::move(entry.second);
+    }
 
     // Mark schedule as changed so SchedInfoCallback invalidates the per-node
     // serialization cache, regardless of whether this is a new or replacement workload.
