@@ -154,7 +154,7 @@
                     "-d",
                     "7777",
                     "--node-config",
-                    "/home/lgesdv/demo_vso/s-core-poc/Node1/pullpiri/examples/resources/timpani/node_configurations.yaml"
+                    "/home/acrn/new_ak/vso_score/s-core-poc/Node1/pullpiri/examples/resources/timpani/node_configurations.yaml"
                 ],
                 "depends_on": []
             },

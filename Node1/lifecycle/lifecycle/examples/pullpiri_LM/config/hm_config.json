@@ -3,7 +3,7 @@
   "monitor_tag": "adas_primary_monitor",
   "deadline_tag": "feo_cycle_deadline",
   "deadline_window": {
-    "min_ms": 100,
+    "min_ms": 0,
     "max_ms": 600,
     "comment": "For 400ms cycle: min=0%, max=150% (allows timeout + grace)"
   },
