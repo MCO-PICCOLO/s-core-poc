@@ -112,3 +112,4 @@ For more details and system setup, see the Node2 README.
 - Ensure all prerequisites (Bazel, Rust, Java, sudo access) are met as described in the respective READMEs.
 - For troubleshooting and advanced configuration, refer to the documentation in each module's directory.
 - To add the architecture diagram: Place your architecture PNG image at `.github/architecture.png`
+- The current log level of Mini-Adas app are set at info, for more logs please use the env var and run like this: RUST_LOG=<log level> ./adas_<primary/secondary> <args>

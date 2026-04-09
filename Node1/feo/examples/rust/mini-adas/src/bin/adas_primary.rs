@@ -102,12 +102,17 @@ impl CycleObserver for HmCycleObserver {
 }
 
 fn main() {
+    let log_level = std::env::var("RUST_LOG")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(LevelFilter::Info);
+
     StdoutLoggerBuilder::new()
         .context("adas-primary")
         .show_module(false)
         .show_file(false)
         .show_line(false)
-        .log_level(LevelFilter::Trace)
+        .log_level(log_level)
         .set_as_default_logger();
 
     #[cfg(feature = "lifecycle")]
