@@ -344,6 +344,10 @@ main() {
     fi
 
     echo ""
+    log_info "Before starting the demo (optional automated step):"
+    log_info "  Run Node1/pullpiri/scripts/update_demo_config.sh to apply automated config changes"
+    log_info "  Example: sudo ./pullpiri/scripts/update_demo_config.sh --ip <NODE1_IP> --hostname-node2 <NODE2_HOSTNAME>"
+    echo ""
     log_info "Next steps:"
     log_info "  1. Run build_adas_libs.sh to build C++ shared libraries"
     log_info "  2. Run ./run.sh to start the demo"

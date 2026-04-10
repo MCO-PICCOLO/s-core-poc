@@ -12,6 +12,7 @@ use common::monitoringserver::{ContainerList, NodeInfo}; // Use protobuf types
 use common::Result;
 use std::str::FromStr;
 use std::sync::Arc;
+use common::logd;
 use tokio::sync::{mpsc, Mutex};
 
 /// Main manager struct for MonitoringServer.
@@ -45,11 +46,11 @@ impl MonitoringServerManager {
 
     /// Initializes the MonitoringServerManager (e.g., loads scenarios, prepares state).
     pub async fn initialize(&mut self) -> Result<()> {
-        println!("MonitoringServerManager init");
+        logd!(3, "MonitoringServerManager init");
 
         // Clear stale container data from previous runs
         if let Err(e) = crate::etcd_storage::delete_all_containers().await {
-            eprintln!(
+            logd!(5, 
                 "[MonitoringServerManager] Warning: Failed to clear containers: {}",
                 e
             );
@@ -62,7 +63,7 @@ impl MonitoringServerManager {
     ///
     /// This function handles the received ContainerList and processes it accordingly.
     async fn handle_container_list(&self, container_list: ContainerList) {
-        println!(
+        logd!(3, 
             "[MonitoringServer] Received ContainerList from {}: containers count={}",
             container_list.node_name,
             container_list.containers.len()
@@ -88,12 +89,12 @@ impl MonitoringServerManager {
                 .await
             {
                 Ok(_) => {
-                    println!(
+                    logd!(3, 
                         "[MonitoringServer] SUCCESS: Stored container {} on node {}",
                         container.id, container_list.node_name
                     );
                 }
-                Err(e) => eprintln!(
+                Err(e) => logd!(5, 
                     "[MonitoringServer] ERROR: Failed to store container {}: {}",
                     container.id, e
                 ),
@@ -105,15 +106,15 @@ impl MonitoringServerManager {
 
     /// Print container summary for a node (line-wise, formatted)
     async fn print_container_summary(&self, container_list: &ContainerList) {
-        println!(
+        logd!(3, 
             "\n┌───────────────────────────── CONTAINER SUMMARY ─────────────────────────────┐"
         );
-        println!("│ Node: {:<69} │", container_list.node_name);
-        println!(
+        logd!(3, "│ Node: {:<69} │", container_list.node_name);
+        logd!(3, 
             "│ Total Containers: {:<59} │",
             container_list.containers.len()
         );
-        println!("├─────────────────────────────────────────────────────────────────────────────┤");
+        logd!(3, "├─────────────────────────────────────────────────────────────────────────────┤");
         for (i, container) in container_list.containers.iter().enumerate() {
             let name = container
                 .names
@@ -131,7 +132,7 @@ impl MonitoringServerManager {
                 "paused" => "🟡",
                 _ => "⚪",
             };
-            println!(
+            logd!(3, 
                 "│ {:>2}. {} Name: {:<20} │ Image: {:<20} │ Status: {:<10} │",
                 i + 1,
                 status_icon,
@@ -140,7 +141,7 @@ impl MonitoringServerManager {
                 status
             );
         }
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Print comprehensive container overview (line-wise, formatted)
@@ -153,15 +154,15 @@ impl MonitoringServerManager {
             .count();
         let stopped_count = containers.len() - running_count;
 
-        println!(
+        logd!(3, 
             "\n┌───────────────────────── SYSTEM CONTAINER OVERVIEW ─────────────────────────┐"
         );
-        println!("│ Total Containers: {:<59} │", containers.len());
-        println!(
+        logd!(3, "│ Total Containers: {:<59} │", containers.len());
+        logd!(3, 
             "│ Running: {:<8} │ Stopped: {:<8} │",
             running_count, stopped_count
         );
-        println!("├─────────────────────────────────────────────────────────────────────────────┤");
+        logd!(3, "├─────────────────────────────────────────────────────────────────────────────┤");
         for (i, container) in containers.values().enumerate() {
             let name = container
                 .names
@@ -173,7 +174,7 @@ impl MonitoringServerManager {
                 .get("Status")
                 .cloned()
                 .unwrap_or_else(|| "unknown".to_string());
-            println!(
+            logd!(3, 
                 "│ {:>2}. Name: {:<20} │ Image: {:<20} │ Status: {:<10} │",
                 i + 1,
                 name,
@@ -181,27 +182,27 @@ impl MonitoringServerManager {
                 status
             );
         }
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Print all nodes (line-wise, formatted)
     pub async fn print_all_nodes(&self) {
         let data_store = self.data_store.lock().await;
-        println!(
+        logd!(3, 
             "\n┌────────────────────────────────── ALL NODES ───────────────────────────────┐"
         );
         for (i, (_, node)) in data_store.get_all_nodes().iter().enumerate() {
-            println!("│ {:>2}. Node: {:<20} │ IP: {:<15} │ CPU: {:>5.2}% │ Mem: {:>5.2}% │ Containers: {:<3} │",
+            logd!(3, "│ {:>2}. Node: {:<20} │ IP: {:<15} │ CPU: {:>5.2}% │ Mem: {:>5.2}% │ Containers: {:<3} │",
                 i + 1, node.node_name, node.ip, node.cpu_usage, node.mem_usage,
                 data_store.get_containers_by_node(&node.node_name).len());
         }
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Print all containers (line-wise, formatted)
     pub async fn print_all_containers(&self) {
         let data_store = self.data_store.lock().await;
-        println!(
+        logd!(3, 
             "\n┌──────────────────────────────── ALL CONTAINERS ─────────────────────────────┐"
         );
         for (i, (_, container)) in data_store.get_all_containers().iter().enumerate() {
@@ -215,7 +216,7 @@ impl MonitoringServerManager {
                 .get("Status")
                 .cloned()
                 .unwrap_or_else(|| "unknown".to_string());
-            println!(
+            logd!(3, 
                 "│ {:>2}. Name: {:<20} │ ID: {:<12} │ Image: {:<20} │ Status: {:<10} │",
                 i + 1,
                 name,
@@ -224,30 +225,30 @@ impl MonitoringServerManager {
                 status
             );
         }
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Print all boards (line-wise, formatted)
     pub async fn print_all_boards(&self) {
         let data_store = self.data_store.lock().await;
-        println!(
+        logd!(3, 
             "\n┌────────────────────────────────── ALL BOARDS ───────────────────────────────┐"
         );
         for (i, (_, board)) in data_store.get_all_boards().iter().enumerate() {
-            println!("│ {:>2}. Board: {:<20} │ Nodes: {:<3} │ SoCs: {:<3} │ CPU: {:>5.2}% │ Mem: {:>5.2}% │",
+            logd!(3, "│ {:>2}. Board: {:<20} │ Nodes: {:<3} │ SoCs: {:<3} │ CPU: {:>5.2}% │ Mem: {:>5.2}% │",
                 i + 1, board.board_id, board.nodes.len(), board.socs.len(), board.total_cpu_usage, board.total_mem_usage);
         }
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Print all SoCs (line-wise, formatted)
     pub async fn print_all_socs(&self) {
         let data_store = self.data_store.lock().await;
-        println!(
+        logd!(3, 
             "\n┌────────────────────────────────── ALL SOCs ────────────────────────────────┐"
         );
         for (i, (_, soc)) in data_store.get_all_socs().iter().enumerate() {
-            println!(
+            logd!(3, 
                 "│ {:>2}. SoC: {:<20} │ Nodes: {:<3} │ CPU: {:>5.2}% │ Mem: {:>5.2}% │",
                 i + 1,
                 soc.soc_id,
@@ -256,7 +257,7 @@ impl MonitoringServerManager {
                 soc.total_mem_usage
             );
         }
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Processes NodeInfo messages from nodeagent.
@@ -271,7 +272,7 @@ impl MonitoringServerManager {
             let mut data_store = self.data_store.lock().await;
             match data_store.store_node_info(node_info.clone()).await {
                 Ok(_) => {
-                    println!(
+                    logd!(3, 
                         "[MonitoringServer] SUCCESS: Successfully stored NodeInfo for {}",
                         node_info.node_name
                     );
@@ -289,26 +290,26 @@ impl MonitoringServerManager {
                     self.print_summary_stats(&data_store).await;
                 }
                 Err(e) => {
-                    eprintln!("[MonitoringServer] ERROR: Error storing NodeInfo: {}", e);
+                    logd!(5, "[MonitoringServer] ERROR: Error storing NodeInfo: {}", e);
                 }
             }
         }
 
-        println!("{}", "=".repeat(80));
+        logd!(3, "{}", "=".repeat(80));
     }
 
     /// Print ID generation details for debugging
     fn print_id_generation_details(&self, ip: &str) {
-        println!("\n ID GENERATION DEBUG");
-        println!("┌─────────────────────────────────────────────────────────────────────────────┐");
-        println!("│ Input IP: {:<65} │", ip);
+        logd!(3, "\n ID GENERATION DEBUG");
+        logd!(3, "┌─────────────────────────────────────────────────────────────────────────────┐");
+        logd!(3, "│ Input IP: {:<65} │", ip);
 
         if let Ok(soc_id) = DataStore::generate_soc_id(ip) {
-            println!("│ Generated SoC ID: {:<57} │", soc_id);
+            logd!(3, "│ Generated SoC ID: {:<57} │", soc_id);
         }
 
         if let Ok(board_id) = DataStore::generate_board_id(ip) {
-            println!("│ Generated Board ID: {:<55} │", board_id);
+            logd!(3, "│ Generated Board ID: {:<55} │", board_id);
         }
 
         // Show the logic
@@ -318,21 +319,21 @@ impl MonitoringServerManager {
             let soc_group = (last_octet / 10) * 10;
             let board_group = (last_octet / 100) * 100;
 
-            println!(
+            logd!(3, 
                 "│ Last Octet: {:<3} → SoC Group: {:<3} → Board Group: {:<8}                    │",
                 last_octet, soc_group, board_group
             );
         }
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Print detailed SoC mapping for all current data
     async fn print_detailed_soc_mapping(&self, data_store: &DataStore) {
-        println!("\n DETAILED SOC MAPPING");
-        println!("┌─────────────────────────────────────────────────────────────────────────────┐");
+        logd!(3, "\n DETAILED SOC MAPPING");
+        logd!(3, "┌─────────────────────────────────────────────────────────────────────────────┐");
 
         for (soc_id, soc_info) in data_store.get_all_socs() {
-            println!(
+            logd!(3, 
                 "│ SoC: {:<20} │ Nodes: {:<2} │ Nodes List: {:<24}│",
                 soc_id,
                 soc_info.nodes.len(),
@@ -345,10 +346,10 @@ impl MonitoringServerManager {
             );
         }
 
-        println!("├─────────────────────────────────────────────────────────────────────────────┤");
+        logd!(3, "├─────────────────────────────────────────────────────────────────────────────┤");
 
         for (board_id, board_info) in data_store.get_all_boards() {
-            println!(
+            logd!(3, 
                 "│ Board: {:<18} │ Nodes: {:<2} │ SoCs: {:<2} │ SoC List: {:<14} │",
                 board_id,
                 board_info.nodes.len(),
@@ -361,15 +362,15 @@ impl MonitoringServerManager {
                     .join(", ")
             );
         }
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Enhanced Board info printing with SoC details
     fn print_board_info(&self, board_info: &BoardInfo) {
-        println!("\nBOARD INFORMATION");
-        println!("┌─────────────────────────────────────────────────────────────────────────────┐");
-        println!("│ Board ID: {:<65} │", board_info.board_id);
-        println!(
+        logd!(3, "\nBOARD INFORMATION");
+        logd!(3, "┌─────────────────────────────────────────────────────────────────────────────┐");
+        logd!(3, "│ Board ID: {:<65} │", board_info.board_id);
+        logd!(3, 
             "│ Nodes Count: {:<6} │ SoCs Count: {:<6} │ Updated: {:<19}     │",
             board_info.nodes.len(),
             board_info.socs.len(),
@@ -378,14 +379,14 @@ impl MonitoringServerManager {
 
         // Show SoCs in this board
         if !board_info.socs.is_empty() {
-            println!(
+            logd!(3, 
                 "├─────────────────────────────────────────────────────────────────────────────┤"
             );
-            println!(
+            logd!(3, 
                 "│ SoCs in this Board:                                                         │"
             );
             for (i, soc) in board_info.socs.iter().enumerate() {
-                println!(
+                logd!(3, 
                     "│  {}. SoC: {:<25} │ Nodes: {:<2} │ Avg CPU: {:<6.2}%           │",
                     i + 1,
                     soc.soc_id,
@@ -395,24 +396,24 @@ impl MonitoringServerManager {
             }
         }
 
-        println!("├─────────────────────────────────────────────────────────────────────────────┤");
-        println!("│ Board-wide Aggregated Metrics:                                              │");
-        println!(
+        logd!(3, "├─────────────────────────────────────────────────────────────────────────────┤");
+        logd!(3, "│ Board-wide Aggregated Metrics:                                              │");
+        logd!(3, 
             "│   CPU: {:<7.2}% │ Total Cores: {:<5} │ GPU Units: {:<3} │ Efficiency: {:<4}    │",
             board_info.total_cpu_usage,
             board_info.total_cpu_count,
             board_info.total_gpu_count,
             self.calculate_efficiency(board_info.total_cpu_usage)
         );
-        println!(
+        logd!(3, 
             "│   Memory: {:<4.2}% │ Used: {:<9} │ Total: {:<9} │ Free: {:<9} │",
             board_info.total_mem_usage,
             self.format_memory(board_info.total_used_memory),
             self.format_memory(board_info.total_memory),
             self.format_memory(board_info.total_memory - board_info.total_used_memory)
         );
-        println!("├─────────────────────────────────────────────────────────────────────────────┤");
-        println!("│ Nodes on this Board (grouped by SoC):                                       │");
+        logd!(3, "├─────────────────────────────────────────────────────────────────────────────┤");
+        logd!(3, "│ Nodes on this Board (grouped by SoC):                                       │");
         for (i, node) in board_info.nodes.iter().enumerate() {
             let status = if node.cpu_usage > 80.0 {
                 "HIGH"
@@ -423,7 +424,7 @@ impl MonitoringServerManager {
             };
             // Show which SoC this node belongs to
             let soc_id = DataStore::generate_soc_id(&node.ip).unwrap_or_default();
-            println!(
+            logd!(3, 
                 "│  {}. {:<25} │ SoC: {:<15} │ CPU: {:<6.2}% {} │",
                 i + 1,
                 node.node_name,
@@ -432,41 +433,41 @@ impl MonitoringServerManager {
                 status
             );
         }
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Prints detailed NodeInfo in a formatted way
     fn print_node_info(&self, node_info: &NodeInfo) {
-        println!("\nNODE INFORMATION");
-        println!("┌─────────────────────────────────────────────────────────────────────────────┐");
-        println!("│ Node: {:<69} │", node_info.node_name);
-        println!("│ IP Address: {:<63} │", node_info.ip);
-        println!("├─────────────────────────────────────────────────────────────────────────────┤");
-        println!(
+        logd!(3, "\nNODE INFORMATION");
+        logd!(3, "┌─────────────────────────────────────────────────────────────────────────────┐");
+        logd!(3, "│ Node: {:<69} │", node_info.node_name);
+        logd!(3, "│ IP Address: {:<63} │", node_info.ip);
+        logd!(3, "├─────────────────────────────────────────────────────────────────────────────┤");
+        logd!(3, 
             "│ CPU Usage: {:<6.2}% │ Cores: {:<3} │ GPU Units: {:<3} │ OS: {:<4} │",
             node_info.cpu_usage, node_info.cpu_count, node_info.gpu_count, node_info.os
         );
-        println!(
+        logd!(3, 
             "│ Memory: {:<7.2}% │ Used: {:<8} KB │ Total: {:<8} KB │ Arch: {:<6} │",
             node_info.mem_usage,
             self.format_memory(node_info.used_memory),
             self.format_memory(node_info.total_memory),
             node_info.arch
         );
-        println!("├─────────────────────────────────────────────────────────────────────────────┤");
-        println!(
+        logd!(3, "├─────────────────────────────────────────────────────────────────────────────┤");
+        logd!(3, 
             "│ Network - RX: {:<15} │ TX: {:<15} │ Total: {:<14} │",
             self.format_bytes(node_info.rx_bytes),
             self.format_bytes(node_info.tx_bytes),
             self.format_bytes(node_info.rx_bytes + node_info.tx_bytes)
         );
-        println!(
+        logd!(3, 
             "│ Disk I/O - Read: {:<12} │ Write: {:<12} │ Total: {:<14} │",
             self.format_bytes(node_info.read_bytes),
             self.format_bytes(node_info.write_bytes),
             self.format_bytes(node_info.read_bytes + node_info.write_bytes)
         );
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Prints aggregated SoC and Board information
@@ -488,44 +489,44 @@ impl MonitoringServerManager {
 
     /// Prints detailed SoC information
     fn print_soc_info(&self, soc_info: &SocInfo) {
-        println!("\n SOC INFORMATION");
-        println!("┌─────────────────────────────────────────────────────────────────────────────┐");
-        println!("│ SoC ID: {:<67} │", soc_info.soc_id);
-        println!("│ Nodes Count: {:<62} │", soc_info.nodes.len());
-        println!("├─────────────────────────────────────────────────────────────────────────────┤");
-        println!("│ Aggregated Metrics:                                                         │");
-        println!(
+        logd!(3, "\n SOC INFORMATION");
+        logd!(3, "┌─────────────────────────────────────────────────────────────────────────────┐");
+        logd!(3, "│ SoC ID: {:<67} │", soc_info.soc_id);
+        logd!(3, "│ Nodes Count: {:<62} │", soc_info.nodes.len());
+        logd!(3, "├─────────────────────────────────────────────────────────────────────────────┤");
+        logd!(3, "│ Aggregated Metrics:                                                         │");
+        logd!(3, 
             "│   CPU: {:<7.2}%    │ Total Cores: {:<8}  │ GPU Units: {:<8}  │ Updated: {:<8} │",
             soc_info.total_cpu_usage,
             soc_info.total_cpu_count,
             soc_info.total_gpu_count,
             self.format_time_ago(&soc_info.last_updated)
         );
-        println!(
+        logd!(3, 
             "│   Memory: {:<4.2}%   │ Used: {:<11}      │ Total: {:<11}   │ Free: {:<8}  │",
             soc_info.total_mem_usage,
             self.format_memory(soc_info.total_used_memory),
             self.format_memory(soc_info.total_memory),
             self.format_memory(soc_info.total_memory - soc_info.total_used_memory)
         );
-        println!(
+        logd!(3, 
             "│   Network: RX {:<12} │ TX {:<12}         │ Total {:<12} │",
             self.format_bytes(soc_info.total_rx_bytes),
             self.format_bytes(soc_info.total_tx_bytes),
             self.format_bytes(soc_info.total_rx_bytes + soc_info.total_tx_bytes)
         );
-        println!(
+        logd!(3, 
             "│   Disk I/O: Read {:<9} │ Write {:<9}         │ Total {:<9}    │",
             self.format_bytes(soc_info.total_read_bytes),
             self.format_bytes(soc_info.total_write_bytes),
             self.format_bytes(soc_info.total_read_bytes + soc_info.total_write_bytes)
         );
-        println!("├─────────────────────────────────────────────────────────────────────────────┤");
-        println!("│ Nodes in this SoC:                                                          │");
+        logd!(3, "├─────────────────────────────────────────────────────────────────────────────┤");
+        logd!(3, "│ Nodes in this SoC:                                                          │");
         for (i, node) in soc_info.nodes.iter().enumerate() {
-            println!("│  {}. {:<71} │", i + 1, node.node_name);
+            logd!(3, "│  {}. {:<71} │", i + 1, node.node_name);
         }
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Prints summary statistics
@@ -534,9 +535,9 @@ impl MonitoringServerManager {
         let total_socs = data_store.get_all_socs().len();
         let total_boards = data_store.get_all_boards().len();
 
-        println!("\n SYSTEM SUMMARY");
-        println!("┌─────────────────────────────────────────────────────────────────────────────┐");
-        println!(
+        logd!(3, "\n SYSTEM SUMMARY");
+        logd!(3, "┌─────────────────────────────────────────────────────────────────────────────┐");
+        logd!(3, 
             "│ Total Nodes: {:<8} │ Total SoCs: {:<8} │ Total Boards: {:<8} │ Status: ✅ │",
             total_nodes, total_socs, total_boards
         );
@@ -545,9 +546,9 @@ impl MonitoringServerManager {
         let (avg_cpu, avg_mem, total_cores, total_gpus) =
             self.calculate_system_averages(data_store);
 
-        println!("│ System Avg CPU: {:<6.2}% │ Avg Memory: {:<6.2}% │ Total Cores: {:<6} │ GPUs: {:<4} │", 
+        logd!(3, "│ System Avg CPU: {:<6.2}% │ Avg Memory: {:<6.2}% │ Total Cores: {:<6} │ GPUs: {:<4} │", 
                  avg_cpu, avg_mem, total_cores, total_gpus);
-        println!("└─────────────────────────────────────────────────────────────────────────────┘");
+        logd!(3, "└─────────────────────────────────────────────────────────────────────────────┘");
     }
 
     /// Helper function to format bytes in human-readable format
@@ -635,14 +636,14 @@ impl MonitoringServerManager {
     pub async fn print_all_data(&self) {
         let data_store = self.data_store.lock().await;
 
-        println!("\n COMPLETE SYSTEM OVERVIEW");
-        println!("{}", "=".repeat(80));
+        logd!(3, "\n COMPLETE SYSTEM OVERVIEW");
+        logd!(3, "{}", "=".repeat(80));
 
         // Print all nodes
-        println!("\n ALL NODES:");
+        logd!(3, "\n ALL NODES:");
         for (i, (_, node)) in data_store.get_all_nodes().iter().enumerate() {
             let node_containers = data_store.get_containers_by_node(&node.node_name);
-            println!(
+            logd!(3, 
                 "{}. {} (IP: {}) - CPU: {:.2}%, Memory: {:.2}%, Containers: {}",
                 i + 1,
                 node.node_name,
@@ -654,9 +655,9 @@ impl MonitoringServerManager {
         }
 
         // Print all SoCs
-        println!("\n ALL SOCs:");
+        logd!(3, "\n ALL SOCs:");
         for (i, (_, soc)) in data_store.get_all_socs().iter().enumerate() {
-            println!(
+            logd!(3, 
                 "{}. {} - {} nodes, Avg CPU: {:.2}%, Avg Memory: {:.2}%",
                 i + 1,
                 soc.soc_id,
@@ -667,9 +668,9 @@ impl MonitoringServerManager {
         }
 
         // Print all Boards
-        println!("\n ALL BOARDS:");
+        logd!(3, "\n ALL BOARDS:");
         for (i, (_, board)) in data_store.get_all_boards().iter().enumerate() {
-            println!(
+            logd!(3, 
                 "{}. {} - {} nodes, {} SoCs, Avg CPU: {:.2}%, Avg Memory: {:.2}%",
                 i + 1,
                 board.board_id,
@@ -681,7 +682,7 @@ impl MonitoringServerManager {
         }
 
         // Print all containers
-        println!("\n ALL CONTAINERS:");
+        logd!(3, "\n ALL CONTAINERS:");
         for (i, (_, container)) in data_store.get_all_containers().iter().enumerate() {
             let name = container
                 .names
@@ -694,7 +695,7 @@ impl MonitoringServerManager {
                 .unwrap_or(&"unknown".to_string())
                 .clone();
 
-            println!(
+            logd!(3, 
                 "{}. {} (ID: {}) - Image: {}, Status: {}",
                 i + 1,
                 name,
@@ -768,13 +769,13 @@ impl MonitoringServerManager {
                         // Persist raw JSON into etcd (uses existing helper)
                         match crate::etcd_storage::store_stress_metric_json(&json).await {
                             Ok(_) => {
-                                println!(
+                                logd!(3, 
                                     "[MonitoringServer] SUCCESS: Stored stress metric for process={} pid={}",
                                     pname, pid
                                 );
                             }
                             Err(e) => {
-                                eprintln!(
+                                logd!(5, 
                                     "[MonitoringServer] ERROR: Failed to store stress metric to etcd: {}",
                                     e
                                 );
@@ -782,7 +783,7 @@ impl MonitoringServerManager {
                         }
                     }
                     Err(e) => {
-                        eprintln!(
+                        logd!(5, 
                             "[MonitoringServer] ERROR: received invalid stress metric JSON: {} -- payload: {}",
                             e, json
                         );
@@ -805,7 +806,7 @@ impl MonitoringServerManager {
         let container_manager = Arc::clone(&arc_self);
         let container_processor = tokio::spawn(async move {
             if let Err(e) = container_manager.process_container_requests().await {
-                eprintln!("Container processor error: {:?}", e);
+                logd!(5, "Container processor error: {:?}", e);
             }
         });
 
@@ -813,7 +814,7 @@ impl MonitoringServerManager {
         let node_manager = Arc::clone(&arc_self);
         let node_processor = tokio::spawn(async move {
             if let Err(e) = node_manager.process_node_info_requests().await {
-                eprintln!("Node processor error: {:?}", e);
+                logd!(5, "Node processor error: {:?}", e);
             }
         });
 
@@ -821,12 +822,12 @@ impl MonitoringServerManager {
         let stress_manager = Arc::clone(&arc_self);
         let stress_processor = tokio::spawn(async move {
             if let Err(e) = stress_manager.process_stress_requests().await {
-                eprintln!("Stress processor error: {:?}", e);
+                logd!(5, "Stress processor error: {:?}", e);
             }
         });
 
         let _ = tokio::try_join!(container_processor, node_processor, stress_processor);
-        println!("MonitoringServerManager stopped");
+        logd!(3, "MonitoringServerManager stopped");
         Ok(())
     }
 }

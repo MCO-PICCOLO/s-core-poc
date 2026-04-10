@@ -90,11 +90,28 @@ if [[ -n "${HOSTNAME:-}" ]]; then
 fi
 
 # 3) Update RESCHEDULE_YAML_PATH constant in timpani.rs
+#    The constant may be declared across two lines:
+#      const RESCHEDULE_YAML_PATH: &str =
+#          "...path...";
+#    Use Python to handle this reliably.
 if [[ -n "${RESCHEDULE_PATH:-}" && -f "$TIMPANI_RS" ]]; then
   echo "Patching RESCHEDULE_YAML_PATH in $TIMPANI_RS -> $RESCHEDULE_PATH"
-  # Escape slashes for sed delimiter
-  escpath=$(printf '%s' "$RESCHEDULE_PATH" | sed 's/[&/]/\\&/g')
-  sed -i -E "s|const RESCHEDULE_YAML_PATH: &str = \".*\";|const RESCHEDULE_YAML_PATH: &str = \"$escpath\";|" "$TIMPANI_RS"
+  python3 - "$TIMPANI_RS" "$RESCHEDULE_PATH" <<'PY'
+import sys, re
+rs_file, new_path = sys.argv[1], sys.argv[2]
+with open(rs_file, 'r') as f:
+    src = f.read()
+# Match single-line or two-line form of the const declaration
+pattern = r'(const RESCHEDULE_YAML_PATH:\s*&str\s*=\s*\n?\s*)"[^"]*"(\s*;)'
+replacement = r'\g<1>"' + new_path + r'"\g<2>'
+new_src, count = re.subn(pattern, replacement, src)
+if count == 0:
+    print(f"WARNING: RESCHEDULE_YAML_PATH not found in {rs_file}", file=sys.stderr)
+    sys.exit(1)
+with open(rs_file, 'w') as f:
+    f.write(new_src)
+print(f"Patched {count} occurrence(s)")
+PY
 fi
 
 # 4) Update pullpiri_lm_config.json's node-config path
