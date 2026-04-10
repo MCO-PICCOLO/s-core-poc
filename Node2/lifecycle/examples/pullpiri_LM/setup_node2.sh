@@ -445,6 +445,12 @@ main() {
 
     echo ""
     log_info "Next steps:"
+    log_info "  - Option A run echo "
+    log_info "  Before starting the demo optional automated step:"
+    log_info "  Run Node2/pullpiri/scripts/update_node2_config.sh to apply automated config changes"
+    log_info "  Example: sudo ./pullpiri/scripts/update_node2_config.sh --master-ip <NODE1_IP> --node-ip <NODE2_IP> --hostname <NODE2_HOSTNAME>"
+    log_info ""
+    log_info "  Option B manual configuration:"
     log_info "  1. Configure /etc/piccolo/nodeagent.yaml with Node1 and Node2 IPs"
     log_info "  2. Update lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json"
     log_info "  3. Run ./run.sh to start the Launch Manager"
