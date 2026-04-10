@@ -64,8 +64,59 @@ sudo apt install -y libsystemd-dev
 ```
 
 ---
-### Node 2 - Setup & Launch 
---
+### Node 2 - Setup & Launch
+
+### Configuration Steps 1–2 — Automated or Manual
+
+Steps 1–2 update config files with your IP addresses and hostname.
+Use the automation script (**Option A**, recommended) or edit the files manually (**Option B**).
+
+#### Option A — Automated Config Update (Recommended)
+
+```bash
+# Navigate to scripts directory
+cd ~/s-core-poc/Node2/pullpiri/scripts
+
+# Make script executable
+chmod +x update_node2_config.sh
+
+# Run with Node 1 (master) IP, this node's IP, and this node's hostname
+sudo ./update_node2_config.sh --master-ip <NODE1_IP> --node-ip <NODE2_IP>
+```
+
+**Replace placeholders:**
+- `<NODE1_IP>` — IP address of Node 1 (Master), e.g., `192.168.10.100`
+- `<NODE2_IP>` — IP address of this Node 2 (Worker), e.g., `192.168.10.101`
+
+The hostname defaults to `$(hostname)` automatically. Override with `--hostname <NAME>` if needed.
+
+| Option | Description |
+|---|---|
+| `--master-ip` | Node 1 IP → injected into nodeagent.yaml, timpani.sh, pullpiri_lm_config.json |
+| `--node-ip` | This node's IP → written into `/etc/piccolo/nodeagent.yaml` |
+| `--hostname` | Override hostname (default: `$(hostname)`) → written into nodeagent.yaml and safe-exit-assist.yaml |
+| `--pullpiri-config` | Override path to `pullpiri_lm_config.json` (optional) |
+| `--safe-resource` | Override path to `safe-exit-assist.yaml` (optional) |
+| `--timpani-sh` | Override path to `timpani.sh` (optional) |
+
+**What the script updates:**
+- `/etc/piccolo/nodeagent.yaml` — creates/writes full config with master IP, node IP, and hostname (via sudo)
+- `examples/resources/safe-exit-assist.yaml` — sets `node` / `node_name` to this node's hostname
+- `examples/timpani.sh` — updates the API server URL to Node 1 IP
+- `lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json` — sets timpani-n's last argument to Node 1 IP
+
+Backups of all modified files are saved with a `.bak` extension.
+
+> After running the script, skip to **[Setup Steps](#setup-steps)** to build binaries.
+
+---
+
+#### Option B — Manual Config Update
+
+Follow Steps 1–2 below.
+
+---
+
 ### Step 1 — Configure NodeAgent
 
 Create the NodeAgent configuration file with your Node 1 (Master) and Node 2 (Worker) IP addresses:

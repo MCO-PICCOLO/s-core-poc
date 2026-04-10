@@ -108,6 +108,10 @@ sudo cp "$CFG_DIR/hmproc_adas_primary.bin" /opt/pullpiri/etc/hmproc_adas_primary
 
 # ---- Step 4: Launch ----
 echo ""
+echo "[4.5/5] Clearing Pullpiri DB files (if present)..."
+# Remove shard-0 DB files (safe to run; no-op if not present)
+sudo rm -rf /opt/pullpiri/bin/kvs_0_* 2>/dev/null || echo "No matching kvs_0_* files to remove"
+echo ""
 echo "[5/5] Starting Launch Manager daemon..."
 echo "      Press Ctrl+C to stop."
 echo "============================================="

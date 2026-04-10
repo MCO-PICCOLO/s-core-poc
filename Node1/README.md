@@ -34,6 +34,54 @@ Key checklist for manual setup:
 
 ## Node 1 — Master Setup & Launch
 
+### Configuration Steps 1–3 — Automated or Manual
+
+Steps 1–3 update config files with your actual IP addresses and paths.
+Use the automation script (**Option A**, recommended) or edit the files manually (**Option B**).
+
+#### Option A — Automated Config Update (Recommended)
+
+```bash
+# Navigate to scripts directory
+cd ~/s-core-poc/Node1/pullpiri/scripts
+
+# Make script executable
+chmod +x update_demo_config.sh
+
+# Run with your Node 1 IP and Node 2 hostname
+sudo ./update_demo_config.sh --ip <NODE1_IP> --hostname <NODE2_HOSTNAME>
+```
+
+**Replace placeholders:**
+- `<NODE1_IP>` — IP address of Node 1 (Master), e.g., `192.168.10.100`
+- `<NODE2_HOSTNAME>` — hostname of Node 2 (run `hostname` on Node 2), e.g., `lg-NUC11TNHi5`
+
+| Option | Description |
+|---|---|
+| `--ip` | Node 1 IP → written into `/etc/piccolo/settings.yaml` |
+| `--hostname` | Node 2 hostname → set as `node_id` in `reschedule_sea.yaml` |
+| `--reschedule-path` | Override path to `reschedule_sea.yaml` (optional) |
+| `--node-config-path` | Override path to `node_configurations.yaml` (optional) |
+| `--pullpiri-config` | Override path to `pullpiri_lm_config.json` (optional) |
+
+**What the script updates:**
+- `/etc/piccolo/settings.yaml` — creates/writes with Node 1 IP (via sudo)
+- `examples/resources/reschedule_sea.yaml` — sets `node_id` to Node 2 hostname
+- `src/player/statemanager/src/grpc/receiver/timpani.rs` — patches `RESCHEDULE_YAML_PATH` constant to absolute path
+- `lifecycle/lifecycle/examples/pullpiri_LM/config/pullpiri_lm_config.json` — updates node config path
+
+Backups of all modified files are saved with a `.bak` extension.
+
+> After running the script, skip to **Step 4** (Clear Database).
+
+---
+
+#### Option B — Manual Config Update
+
+Follow Steps 1–3 below.
+
+---
+
 ### Step 1 — Create Piccolo Settings File
 
 Pullpiri reads its bind IP from `/etc/piccolo/settings.yaml`.
