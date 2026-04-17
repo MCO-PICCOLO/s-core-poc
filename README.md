@@ -4,7 +4,7 @@
 Integration PoC between S-CORE modules and Pullpiri/Timpani
 
 ## Overview
-s-core-poc demonstrates integration between S-CORE modules and Pullpiri/Timpani systems across two nodes (Node-1: Safety Node, Node-2 : Non Safety)
+s-core-poc demonstrates integration between S-CORE modules and Pullpiri/Timpani systems across two nodes (Node-1: Safety Node, Node-2 :  Safety Node)
 
 ---
 
