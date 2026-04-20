@@ -4,7 +4,7 @@
 Integration PoC between S-CORE modules and Pullpiri/Timpani
 
 ## Overview
-s-core-poc demonstrates integration between S-CORE modules and Pullpiri/Timpani systems across two nodes (Node-1: Safety Node, Node-2 : Non Safety)
+s-core-poc demonstrates integration between S-CORE modules and Pullpiri/Timpani systems across two nodes (Node-1: Safety Node, Node-2 : Non Safety Node)
 
 ---
 
@@ -14,7 +14,7 @@ s-core-poc demonstrates integration between S-CORE modules and Pullpiri/Timpani 
 
 The diagram shows the two-node architecture:
 - **Node 1 (Safety/Control Plane)**: Pullpiri Service Mesh, Timpani-O, S-CORE Lifecycle Manager
-- **Node 2 (Non-Safety/Execution)**: NodeAgent, Timpani-N, Container Workloads
+- **Node 2 (Non Safety/Execution)**: NodeAgent, Timpani-N, Container Workloads
 
 ---
 
